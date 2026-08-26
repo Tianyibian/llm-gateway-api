@@ -16,8 +16,16 @@ class Settings(BaseSettings):
 
     app_name: str = "LLM Gateway API"
     llm_provider: Literal["auto", "openai", "ollama"] = "auto"
-    database_url: str = "sqlite+aiosqlite:///./llm_gateway.db"
+    llm_orchestrator: Literal["native", "langchain"] = "native"
+    database_url: str = (
+        "postgresql+asyncpg://llm_gateway:llm_gateway_local@"
+        "127.0.0.1:5432/llm_gateway"
+    )
     database_echo: bool = False
+    database_pool_size: int = 5
+    database_max_overflow: int = 10
+    database_pool_timeout_seconds: float = 30.0
+    database_pool_recycle_seconds: int = 1800
 
     openai_api_key: Optional[SecretStr] = None
     openai_base_url: Optional[str] = None

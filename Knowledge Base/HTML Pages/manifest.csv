@@ -1,0 +1,151 @@
+id,filename,category,title,summary,word_count
+HC-001,001-how-do-i-return-an-item.html,Returns,How do I return an item?,Learn how to start a return for eligible smart home products.,514
+HC-002,002-what-is-the-return-window-for-smart-appliances.html,Returns,What is the return window for smart appliances?,Understand the standard return period and when it begins.,510
+HC-003,003-can-i-return-a-smart-speaker-after-opening-the-box.html,Returns,Can I return a smart speaker after opening the box?,Rules for opened smart speakers and accessory packaging.,507
+HC-004,004-can-i-return-a-smart-display-if-i-connected-it-to-wi-fi.html,Returns,Can I return a smart display if I connected it to Wi-Fi?,Guidance for smart displays that have already been activated.,506
+HC-005,005-can-i-return-a-smart-thermostat-after-installation.html,Returns,Can I return a smart thermostat after installation?,Return requirements for installed thermostats.,502
+HC-006,006-can-i-return-a-smart-doorbell-after-mounting-it.html,Returns,Can I return a smart doorbell after mounting it?,Return rules for mounted smart doorbells.,503
+HC-007,007-can-i-return-a-smart-camera-after-testing-it.html,Returns,Can I return a smart camera after testing it?,"How testing, activation, and missing mounts affect camera returns.",506
+HC-008,008-can-i-return-a-smart-lock-after-installation.html,Returns,Can I return a smart lock after installation?,What to do before returning an installed smart lock.,506
+HC-009,009-can-i-return-a-smart-plug-that-has-been-used.html,Returns,Can I return a smart plug that has been used?,Eligibility for used smart plugs and small accessories.,505
+HC-010,010-can-i-return-smart-lighting-after-pairing-it-with-the-app.html,Returns,Can I return smart lighting after pairing it with the app?,"Returns for bulbs, strips, switches, and lighting kits.",505
+HC-011,011-can-i-return-a-robot-vacuum-after-using-it.html,Returns,Can I return a robot vacuum after using it?,"Return steps for robot vacuums, docks, filters, and brushes.",506
+HC-012,012-can-i-return-an-air-purifier-after-using-the-filter.html,Returns,Can I return an air purifier after using the filter?,How filter use affects air purifier returns.,504
+HC-013,013-can-i-return-a-security-system-kit.html,Returns,Can I return a security system kit?,"Rules for returning bundled alarms, sensors, cameras, and hubs.",506
+HC-014,014-can-i-return-a-streaming-device-after-activation.html,Returns,Can I return a streaming device after activation?,"Activation, reset, and account removal requirements.",503
+HC-015,015-can-i-return-a-smart-tv.html,Returns,Can I return a Smart TV?,"Return requirements for TVs, screens, stands, and remotes.",505
+HC-016,016-can-i-return-a-home-hub.html,Returns,Can I return a home hub?,"Home hub returns, reset steps, and accessory requirements.",505
+HC-017,017-can-i-return-smart-sensors.html,Returns,Can I return smart sensors?,"Guidance for contact, motion, leak, temperature, and presence sensors.",506
+HC-018,018-how-do-i-package-a-return-safely.html,Returns,How do I package a return safely?,Packaging guidance to avoid damage during transit.,504
+HC-019,019-do-i-need-the-original-packaging-to-return-an-item.html,Returns,Do I need the original packaging to return an item?,What to include if the retail box is missing.,506
+HC-020,020-how-do-i-print-a-return-label.html,Returns,How do I print a return label?,Where to find and print prepaid return labels.,505
+HC-021,021-can-i-use-my-own-carrier-for-a-return.html,Returns,Can I use my own carrier for a return?,Customer-arranged return shipping rules.,501
+HC-022,022-how-do-i-return-a-gift.html,Returns,How do I return a gift?,"Gift returns, store credit, and proof of purchase.",505
+HC-023,023-how-do-i-cancel-a-return-request.html,Returns,How do I cancel a return request?,Steps to cancel or update a return request.,505
+HC-024,024-why-was-my-return-request-denied.html,Returns,Why was my return request denied?,Common reasons a return may be declined.,504
+HC-025,025-what-happens-after-i-ship-my-return.html,Returns,What happens after I ship my return?,What to expect after the carrier scans your package.,506
+HC-026,026-how-do-i-request-a-refund.html,Refunds,How do I request a refund?,How to request money back for an eligible order.,482
+HC-027,027-when-will-i-receive-my-refund.html,Refunds,When will I receive my refund?,Typical refund processing and bank posting timelines.,480
+HC-028,028-why-is-my-refund-still-pending.html,Refunds,Why is my refund still pending?,Reasons a refund may take longer than expected.,481
+HC-029,029-can-i-get-a-refund-before-returning-the-item.html,Refunds,Can I get a refund before returning the item?,When advance refunds may or may not be available.,479
+HC-030,030-how-are-refunds-issued-for-split-payments.html,Refunds,How are refunds issued for split payments?,"Refunds for gift cards, store credit, and card payments.",479
+HC-031,031-can-shipping-fees-be-refunded.html,Refunds,Can shipping fees be refunded?,When outbound shipping charges are refundable.,476
+HC-032,032-can-installation-fees-be-refunded.html,Refunds,Can installation fees be refunded?,"Refund rules for installation, service visits, and add-ons.",478
+HC-033,033-can-i-receive-store-credit-instead-of-a-refund.html,Refunds,Can I receive store credit instead of a refund?,How store credit works and when it is offered.,479
+HC-034,034-what-should-i-do-if-my-refund-amount-looks-wrong.html,Refunds,What should I do if my refund amount looks wrong?,How to report a refund calculation issue.,477
+HC-035,035-why-did-i-receive-a-partial-refund.html,Refunds,Why did I receive a partial refund?,Common reasons for partial refund adjustments.,476
+HC-036,036-how-do-refunds-work-for-bundles.html,Refunds,How do refunds work for bundles?,"Refund treatment for kits, promotions, and bundle discounts.",478
+HC-037,037-how-do-refunds-work-for-promotional-discounts.html,Refunds,How do refunds work for promotional discounts?,How coupons and discounts affect refunds.,476
+HC-038,038-how-do-refunds-work-for-taxes.html,Refunds,How do refunds work for taxes?,Tax refund timing and calculation guidance.,476
+HC-039,039-what-if-my-payment-card-was-closed.html,Refunds,What if my payment card was closed?,Options when the original payment method is no longer active.,480
+HC-040,040-how-do-i-check-refund-status.html,Refunds,How do I check refund status?,Where to find refund status in your account.,478
+HC-041,041-how-do-i-track-my-order.html,Shipping and Delivery,How do I track my order?,How to find tracking information for your shipment.,480
+HC-042,042-how-do-i-change-my-shipping-address.html,Shipping and Delivery,How do I change my shipping address?,When and how a delivery address can be changed.,480
+HC-043,043-can-i-ship-to-a-po-box.html,Shipping and Delivery,Can I ship to a PO Box?,PO Box limitations for smart appliances and large items.,480
+HC-044,044-can-i-choose-a-delivery-date.html,Shipping and Delivery,Can I choose a delivery date?,Delivery scheduling options and limitations.,477
+HC-045,045-what-shipping-methods-are-available.html,Shipping and Delivery,What shipping methods are available?,"Standard, expedited, freight, and scheduled delivery options.",479
+HC-046,046-how-much-does-shipping-cost.html,Shipping and Delivery,How much does shipping cost?,How shipping charges are calculated.,477
+HC-047,047-do-you-offer-free-shipping.html,Shipping and Delivery,Do you offer free shipping?,Eligibility for free standard shipping.,477
+HC-048,048-do-you-ship-internationally.html,Shipping and Delivery,Do you ship internationally?,International delivery availability and limitations.,477
+HC-049,049-why-is-my-order-arriving-in-multiple-packages.html,Shipping and Delivery,Why is my order arriving in multiple packages?,Reasons orders may be split across shipments.,479
+HC-050,050-what-should-i-do-if-my-package-is-delayed.html,Shipping and Delivery,What should I do if my package is delayed?,Steps to follow when tracking has not updated.,480
+HC-051,051-what-should-i-do-if-tracking-says-delivered-but-i-cannot-find-the-package.html,Shipping and Delivery,What should I do if tracking says delivered but I cannot find the package?,How to locate a delivered package and report a missing delivery.,483
+HC-052,052-what-should-i-do-if-my-package-arrives-damaged.html,Shipping and Delivery,What should I do if my package arrives damaged?,How to report transit damage.,477
+HC-053,053-what-should-i-do-if-an-item-is-missing-from-my-package.html,Shipping and Delivery,What should I do if an item is missing from my package?,How to report missing items or accessories.,479
+HC-054,054-do-large-smart-appliances-require-a-signature.html,Shipping and Delivery,Do large smart appliances require a signature?,Signature and appointment requirements.,476
+HC-055,055-how-does-freight-delivery-work-for-smart-tvs.html,Shipping and Delivery,How does freight delivery work for Smart TVs?,"Freight delivery, inspection, and delivery appointment guidance.",479
+HC-056,056-how-do-i-place-an-order.html,Orders and Invoices,How do I place an order?,Basic ordering steps on the website.,448
+HC-057,057-how-do-i-cancel-an-order.html,Orders and Invoices,How do I cancel an order?,Canceling before shipment or fulfillment.,447
+HC-058,058-why-was-my-order-canceled.html,Orders and Invoices,Why was my order canceled?,Common order cancellation reasons.,447
+HC-059,059-can-i-modify-my-order-after-checkout.html,Orders and Invoices,Can I modify my order after checkout?,What details can be changed after purchase.,448
+HC-060,060-how-do-i-request-an-invoice.html,Orders and Invoices,How do I request an invoice?,How to download or request an invoice.,448
+HC-061,061-how-do-i-get-a-receipt.html,Orders and Invoices,How do I get a receipt?,Where to find receipts and order confirmations.,448
+HC-062,062-how-do-i-use-a-promotion-code.html,Orders and Invoices,How do I use a promotion code?,Entering and troubleshooting promo codes.,446
+HC-063,063-why-is-my-promotion-code-not-working.html,Orders and Invoices,Why is my promotion code not working?,Common promo code issues.,445
+HC-064,064-can-i-place-a-bulk-order.html,Orders and Invoices,Can I place a bulk order?,"Bulk purchasing for businesses, landlords, and installers.",448
+HC-065,065-how-do-preorders-work.html,Orders and Invoices,How do preorders work?,"Preorder authorization, shipping, and cancellation rules.",447
+HC-066,066-what-does-backorder-mean.html,Orders and Invoices,What does backorder mean?,Backordered item status and expected updates.,447
+HC-067,067-how-do-i-check-order-status.html,Orders and Invoices,How do I check order status?,Order status definitions and tracking.,446
+HC-068,068-can-i-reorder-a-previous-purchase.html,Orders and Invoices,Can I reorder a previous purchase?,How to reorder items from order history.,448
+HC-069,069-how-do-i-update-my-billing-information.html,Orders and Invoices,How do I update my billing information?,Changing billing information before payment capture.,447
+HC-070,070-why-do-i-see-multiple-authorizations-on-my-card.html,Orders and Invoices,Why do I see multiple authorizations on my card?,Payment authorization and capture explanation.,446
+HC-071,071-what-payment-methods-do-you-accept.html,Payments and Billing,What payment methods do you accept?,"Supported cards, wallets, and financing options.",438
+HC-072,072-can-i-use-multiple-payment-methods.html,Payments and Billing,Can I use multiple payment methods?,Split payment availability and limitations.,437
+HC-073,073-how-do-gift-cards-work.html,Payments and Billing,How do gift cards work?,Using gift cards and checking balances.,439
+HC-074,074-why-was-my-payment-declined.html,Payments and Billing,Why was my payment declined?,Payment troubleshooting steps.,436
+HC-075,075-do-you-offer-financing.html,Payments and Billing,Do you offer financing?,Installment and financing overview.,437
+HC-076,076-how-do-i-update-a-saved-payment-method.html,Payments and Billing,How do I update a saved payment method?,Managing saved payment methods in your account.,440
+HC-077,077-is-my-payment-information-secure.html,Payments and Billing,Is my payment information secure?,Payment security and tokenization overview.,438
+HC-078,078-can-i-change-the-currency-at-checkout.html,Payments and Billing,Can I change the currency at checkout?,Currency display and billing rules.,438
+HC-079,079-how-are-sales-taxes-calculated.html,Payments and Billing,How are sales taxes calculated?,Tax calculation based on address and items.,440
+HC-080,080-do-you-provide-tax-exempt-purchasing.html,Payments and Billing,Do you provide tax-exempt purchasing?,Tax exemption process for eligible customers.,439
+HC-081,081-how-do-i-create-an-account.html,Account Management,How do I create an account?,Benefits and steps for creating an account.,428
+HC-082,082-how-do-i-reset-my-password.html,Account Management,How do I reset my password?,Resetting account passwords.,424
+HC-083,083-how-do-i-change-my-email-address.html,Account Management,How do I change my email address?,Updating the email associated with your account.,427
+HC-084,084-how-do-i-delete-my-account.html,Account Management,How do I delete my account?,Account deletion and data impact.,426
+HC-085,085-how-do-i-manage-email-preferences.html,Account Management,How do I manage email preferences?,Changing marketing and service notification settings.,427
+HC-086,086-how-do-i-add-or-remove-addresses.html,Account Management,How do I add or remove addresses?,Managing saved shipping and billing addresses.,427
+HC-087,087-how-do-i-enable-two-step-verification.html,Account Management,How do I enable two-step verification?,Additional account security options.,425
+HC-088,088-why-am-i-locked-out-of-my-account.html,Account Management,Why am I locked out of my account?,Account lockout and recovery guidance.,426
+HC-089,089-how-do-i-view-my-order-history.html,Account Management,How do I view my order history?,Finding past orders and related documents.,427
+HC-090,090-how-do-i-contact-customer-support.html,Account Management,How do I contact customer support?,Support channels and response expectations.,426
+HC-091,091-how-do-i-set-up-a-smart-speaker.html,Product Setup,How do I set up a smart speaker?,Initial setup and pairing for smart speakers.,468
+HC-092,092-how-do-i-set-up-a-smart-display.html,Product Setup,How do I set up a smart display?,Setup steps for smart displays.,466
+HC-093,093-how-do-i-install-a-smart-thermostat.html,Product Setup,How do I install a smart thermostat?,Installation preparation and safety reminders.,467
+HC-094,094-how-do-i-install-a-smart-doorbell.html,Product Setup,How do I install a smart doorbell?,Doorbell installation basics.,465
+HC-095,095-how-do-i-set-up-a-smart-camera.html,Product Setup,How do I set up a smart camera?,"Camera setup, mounting, and privacy guidance.",468
+HC-096,096-how-do-i-install-a-smart-lock.html,Product Setup,How do I install a smart lock?,Smart lock installation and calibration basics.,468
+HC-097,097-how-do-i-set-up-a-smart-plug.html,Product Setup,How do I set up a smart plug?,Pairing and naming a smart plug.,468
+HC-098,098-how-do-i-set-up-smart-lighting.html,Product Setup,How do I set up smart lighting?,"Bulb, strip, and switch setup.",467
+HC-099,099-how-do-i-set-up-a-robot-vacuum.html,Product Setup,How do I set up a robot vacuum?,"Dock placement, mapping, and first cleaning run.",469
+HC-100,100-how-do-i-set-up-an-air-purifier.html,Product Setup,How do I set up an air purifier?,Filter installation and first use.,467
+HC-101,101-how-do-i-set-up-a-security-system.html,Product Setup,How do I set up a security system?,"Hub, sensor, and alarm setup.",467
+HC-102,102-how-do-i-set-up-a-streaming-device.html,Product Setup,How do I set up a streaming device?,TV connection and account setup.,467
+HC-103,103-how-do-i-set-up-a-smart-tv.html,Product Setup,How do I set up a Smart TV?,Initial Smart TV configuration.,466
+HC-104,104-how-do-i-set-up-a-home-hub.html,Product Setup,How do I set up a home hub?,Home hub connection and device discovery.,468
+HC-105,105-how-do-i-set-up-smart-sensors.html,Product Setup,How do I set up smart sensors?,"Sensor pairing, placement, and testing.",467
+HC-106,106-why-will-my-device-not-connect-to-wi-fi.html,Troubleshooting,Why will my device not connect to Wi-Fi?,Wi-Fi connection troubleshooting.,448
+HC-107,107-why-does-my-device-show-as-offline.html,Troubleshooting,Why does my device show as offline?,Offline device checks and fixes.,451
+HC-108,108-how-do-i-reset-my-smart-device.html,Troubleshooting,How do I reset my smart device?,"Restart, soft reset, and factory reset guidance.",453
+HC-109,109-why-is-my-app-not-finding-the-device.html,Troubleshooting,Why is my app not finding the device?,Device discovery troubleshooting.,448
+HC-110,110-why-are-firmware-updates-failing.html,Troubleshooting,Why are firmware updates failing?,Firmware update troubleshooting.,448
+HC-111,111-why-is-my-smart-speaker-not-responding.html,Troubleshooting,Why is my smart speaker not responding?,Voice assistant and microphone troubleshooting.,450
+HC-112,112-why-is-my-smart-display-screen-frozen.html,Troubleshooting,Why is my smart display screen frozen?,Display freeze and restart steps.,450
+HC-113,113-why-is-my-smart-thermostat-reading-the-wrong-temperature.html,Troubleshooting,Why is my smart thermostat reading the wrong temperature?,Thermostat temperature troubleshooting.,448
+HC-114,114-why-is-my-smart-doorbell-not-ringing.html,Troubleshooting,Why is my smart doorbell not ringing?,Doorbell chime and notification troubleshooting.,450
+HC-115,115-why-is-my-smart-camera-video-blurry.html,Troubleshooting,Why is my smart camera video blurry?,Camera image quality troubleshooting.,449
+HC-116,116-why-is-my-smart-lock-not-locking.html,Troubleshooting,Why is my smart lock not locking?,Lock alignment and calibration troubleshooting.,450
+HC-117,117-why-is-my-smart-plug-not-turning-on.html,Troubleshooting,Why is my smart plug not turning on?,Smart plug power and schedule checks.,451
+HC-118,118-why-are-my-smart-lights-flickering.html,Troubleshooting,Why are my smart lights flickering?,Lighting flicker troubleshooting.,448
+HC-119,119-why-is-my-robot-vacuum-stuck.html,Troubleshooting,Why is my robot vacuum stuck?,Robot vacuum navigation and obstacle checks.,451
+HC-120,120-why-does-my-air-purifier-show-a-filter-warning.html,Troubleshooting,Why does my air purifier show a filter warning?,Filter warnings and sensor checks.,450
+HC-121,121-how-do-i-check-warranty-coverage.html,Warranty and Repairs,How do I check warranty coverage?,Finding warranty status for your product.,445
+HC-122,122-how-do-i-submit-a-warranty-claim.html,Warranty and Repairs,How do I submit a warranty claim?,Warranty claim steps and required information.,444
+HC-123,123-what-is-not-covered-by-warranty.html,Warranty and Repairs,What is not covered by warranty?,Common warranty exclusions.,442
+HC-124,124-do-replacement-products-have-a-new-warranty.html,Warranty and Repairs,Do replacement products have a new warranty?,Warranty rules for replacements.,442
+HC-125,125-how-do-i-transfer-warranty-coverage.html,Warranty and Repairs,How do I transfer warranty coverage?,Warranty transfer conditions.,441
+HC-126,126-how-do-i-register-my-product.html,Warranty and Repairs,How do I register my product?,Product registration steps.,441
+HC-127,127-what-proof-of-purchase-do-i-need.html,Warranty and Repairs,What proof of purchase do I need?,Acceptable documents for warranty support.,443
+HC-128,128-how-do-repairs-work.html,Warranty and Repairs,How do repairs work?,"Repair review, shipping, and replacement options.",444
+HC-129,129-can-i-buy-an-extended-protection-plan.html,Warranty and Repairs,Can I buy an extended protection plan?,Protection plan overview.,441
+HC-130,130-how-do-i-get-replacement-parts.html,Warranty and Repairs,How do I get replacement parts?,Ordering approved replacement parts.,442
+HC-131,131-how-does-asterhome-use-device-data.html,Privacy and Security,How does AsterHome use device data?,Device data use for smart appliance features.,463
+HC-132,132-how-do-i-remove-a-device-from-my-account.html,Privacy and Security,How do I remove a device from my account?,Removing devices and unlinking access.,458
+HC-133,133-how-do-i-delete-recordings-from-my-smart-camera.html,Privacy and Security,How do I delete recordings from my smart camera?,Deleting video recordings and clips.,458
+HC-134,134-how-do-i-manage-voice-recordings.html,Privacy and Security,How do I manage voice recordings?,Voice recording controls for smart speakers and displays.,464
+HC-135,135-how-do-i-manage-app-permissions.html,Privacy and Security,How do I manage app permissions?,"Location, Bluetooth, camera, and notification permissions.",462
+HC-136,136-how-do-i-share-device-access-with-family-members.html,Privacy and Security,How do I share device access with family members?,Shared users and permission levels.,461
+HC-137,137-how-do-i-revoke-shared-access.html,Privacy and Security,How do I revoke shared access?,Removing shared users from a device or home.,464
+HC-138,138-how-do-i-export-my-personal-data.html,Privacy and Security,How do I export my personal data?,Data access and export request overview.,462
+HC-139,139-how-do-i-opt-out-of-marketing-messages.html,Privacy and Security,How do I opt out of marketing messages?,Marketing opt-out options.,459
+HC-140,140-how-do-i-report-a-security-concern.html,Privacy and Security,How do I report a security concern?,Reporting vulnerabilities or suspicious activity.,461
+HC-141,141-how-do-cloud-storage-plans-work.html,Subscriptions and Cloud Services,How do cloud storage plans work?,Smart camera cloud storage overview.,428
+HC-142,142-how-do-i-cancel-a-subscription.html,Subscriptions and Cloud Services,How do I cancel a subscription?,Canceling cloud storage or service subscriptions.,429
+HC-143,143-how-do-i-change-my-subscription-plan.html,Subscriptions and Cloud Services,How do I change my subscription plan?,Upgrading or downgrading a plan.,427
+HC-144,144-why-was-i-charged-for-a-subscription.html,Subscriptions and Cloud Services,Why was I charged for a subscription?,Subscription billing explanations.,425
+HC-145,145-can-i-get-a-refund-for-a-subscription.html,Subscriptions and Cloud Services,Can I get a refund for a subscription?,Subscription refund rules.,425
+HC-146,146-how-do-free-trials-work.html,Subscriptions and Cloud Services,How do free trials work?,Trial period rules and reminders.,427
+HC-147,147-what-happens-when-my-cloud-plan-expires.html,Subscriptions and Cloud Services,What happens when my cloud plan expires?,Recording access after plan expiration.,427
+HC-148,148-can-i-share-a-subscription-across-devices.html,Subscriptions and Cloud Services,Can I share a subscription across devices?,Multi-device plan sharing rules.,426
+HC-149,149-how-do-i-update-subscription-payment-details.html,Subscriptions and Cloud Services,How do I update subscription payment details?,Changing payment details for recurring plans.,428
+HC-150,150-how-do-i-view-subscription-invoices.html,Subscriptions and Cloud Services,How do I view subscription invoices?,Finding invoices for recurring charges.,427

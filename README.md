@@ -2,9 +2,10 @@
 
 **A production-style, provider-agnostic gateway for large-language-model APIs — streaming, stateful, and persistence-backed.**
 
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)](https://fastapi.tiangolo.com/)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-async%20ORM-d71f00)](https://www.sqlalchemy.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1)](https://www.postgresql.org/)
 [![Alembic](https://img.shields.io/badge/Alembic-migrations-6BA81E)](https://alembic.sqlalchemy.org/)
 [![Tests](https://img.shields.io/badge/tests-pytest%20%2B%20postman-0A9EDC)](#testing)
 [![License](https://img.shields.io/badge/license-MIT-black)](LICENSE)
@@ -24,8 +25,9 @@ of replaying history on every request.
 |---|---|
 | **Streaming by default** | Both endpoints emit Server-Sent Events (`metadata` → `delta` → `done`), so tokens render as they are generated. |
 | **Provider-agnostic** | `LLMServiceFactory` returns an adapter chosen from configuration. Swapping OpenAI ⇄ Ollama requires no client or endpoint changes. |
+| **Optional orchestration** | Use the direct provider adapters by default, or enable LangChain through configuration without changing routes, persistence, or clients. |
 | **Stateful conversations** | Server-side history: send only the new user turn and the service prepends stored context. |
-| **Durable & transactional** | Async SQLAlchemy persistence; a turn is committed atomically, and a conversation auto-created by a failed first stream is cleaned up rather than left orphaned. |
+| **Durable & transactional** | Async SQLAlchemy + PostgreSQL persistence; a turn is committed atomically, and a conversation auto-created by a failed first stream is cleaned up rather than left orphaned. |
 | **Versioned schema** | Alembic migrations are tracked independently of application startup — no implicit schema mutation on boot. |
 | **Ownership enforced** | Conversation reads and mutations are scoped to a `user_id`; another user's thread is indistinguishable from a missing one (404). |
 | **Tested two ways** | Deterministic `pytest` suite (no API credits, no Ollama required) plus a Postman collection that asserts against *live* providers. |
@@ -61,9 +63,10 @@ of replaying history on every request.
 messages → factory selects an adapter → provider stream → completed turn saved
 atomically → `[DONE]`.
 
-The factory keys on *provider* **and** *service type* (`chat`, `reason`, and a
-reserved `recommendation` slot), so new capabilities plug in without touching
-routing code — an application of the factory + adapter patterns.
+The factory keys on *provider*, *service type* (`chat`, `reason`, and a reserved
+`recommendation` slot), and *orchestrator* (`native` or `langchain`). New model
+runtimes plug in without touching routing code — an application of the factory +
+adapter patterns.
 
 ---
 
@@ -110,6 +113,7 @@ python3 -m venv .venv && source .venv/bin/activate
 python -m pip install -r requirements.txt
 
 cp .env.example .env          # then set LLM_PROVIDER (and a key, if using OpenAI)
+docker compose up -d postgres  # start PostgreSQL 17 on localhost:5432
 alembic upgrade head          # create / update the schema
 uvicorn app.main:app --reload
 ```
@@ -129,17 +133,92 @@ curl -N -X POST http://127.0.0.1:8000/api/chat \
 | Variable | Purpose |
 |---|---|
 | `LLM_PROVIDER` | `openai` · `ollama` · `auto` (uses OpenAI when a valid key is present, otherwise Ollama) |
+| `LLM_ORCHESTRATOR` | `native` (default) · `langchain` (optional model abstraction) |
 | `OPENAI_API_KEY` | Required only for the OpenAI path |
 | `OPENAI_CHAT_MODEL` / `OPENAI_REASON_MODEL` | Model per service type |
 | `OLLAMA_BASE_URL` / `OLLAMA_CHAT_MODEL` / `OLLAMA_REASON_MODEL` | Local inference, no key required |
-| `DATABASE_URL` | Defaults to `sqlite+aiosqlite`; swap in an async PostgreSQL URL with no service-layer changes |
+| `DATABASE_URL` | Async PostgreSQL URL using the `postgresql+asyncpg` driver |
+| `DATABASE_POOL_SIZE` / `DATABASE_MAX_OVERFLOW` | Base and burst capacity for SQLAlchemy's async connection pool |
+| `DATABASE_POOL_TIMEOUT_SECONDS` | Maximum wait for an available pooled connection |
+| `DATABASE_POOL_RECYCLE_SECONDS` | Maximum lifetime before a pooled connection is replaced |
 
 Both providers share one request schema and one SSE contract, so switching is a
 configuration change — clients and tests stay identical. Restart Uvicorn after
 editing `.env`.
 
+### Optional LangChain runtime
+
+LangChain is an orchestration layer, not another model provider. With
+`LLM_ORCHESTRATOR=langchain`, the factory still selects OpenAI or Ollama, then
+wraps that provider's LangChain chat model behind the same local `LLMService`
+interface. Conversation persistence, ownership checks, SSE, and API contracts
+do not change.
+
+LangChain 1.x requires Python 3.10 or newer. Install the optional dependency set
+in a suitable virtual environment:
+
+```bash
+python3.13 -m venv .venv-langchain
+source .venv-langchain/bin/activate
+python -m pip install -r requirements-langchain.txt
+```
+
+Then set these values in the local `.env` and restart Uvicorn:
+
+```dotenv
+LLM_ORCHESTRATOR=langchain
+LLM_PROVIDER=ollama
+```
+
+Use `LLM_PROVIDER=openai` instead to run the same adapter through OpenAI. Set
+`LLM_ORCHESTRATOR=native` to return to the direct SDK/HTTP implementations.
+
 **Secrets:** `.env` is git-ignored and only `.env.example` is committed; keys
 never appear in source, docs, or requests. Verify with `git check-ignore -v .env`.
+The Compose credentials are intentionally local-development defaults; replace
+them with managed secrets in any shared or deployed environment.
+
+---
+
+## PostgreSQL database
+
+The application uses PostgreSQL 17 through SQLAlchemy's async `asyncpg` driver.
+The local service is defined in `compose.yaml`; its data survives container
+restarts in the `postgres_data` Docker volume.
+
+```bash
+docker compose up -d postgres
+docker compose ps
+alembic upgrade head
+alembic current
+alembic check
+```
+
+Stop the local database without deleting its volume:
+
+```bash
+docker compose stop postgres
+```
+
+### Migrate existing SQLite data
+
+Apply the schema to an empty PostgreSQL database first, then validate and run
+the copy:
+
+```bash
+docker compose up -d postgres
+alembic upgrade head
+python -m scripts.migrate_sqlite_to_postgres --dry-run
+python -m scripts.migrate_sqlite_to_postgres
+```
+
+The source defaults to `./llm_gateway.db`; override it with
+`SQLITE_SOURCE_URL=sqlite+aiosqlite:////absolute/path/to/source.db` when needed.
+The migration copies IDs, timestamps, conversations, and messages in one target
+transaction, updates the PostgreSQL message-ID sequence, refuses a non-empty
+target, masks the target password in output, and never modifies or deletes the
+SQLite source. To roll back before removing the source, point `DATABASE_URL`
+back to the preserved SQLite URL and restart Uvicorn.
 
 ---
 
@@ -177,13 +256,17 @@ app/
 ├── models/schemas.py             # Pydantic request & response schemas
 ├── services/base.py              # abstract service + service types
 ├── services/factory.py           # provider × service-type factory
+├── services/langchain_service.py # optional LangChain adapter
 ├── services/openai_service.py    # OpenAI adapter
 ├── services/ollama_service.py    # Ollama streaming adapter
 ├── services/conversation_service.py
 └── main.py
+compose.yaml                      # local PostgreSQL 17 service
 migrations/                       # Alembic revisions
+scripts/                          # SQLite-to-PostgreSQL data migration
 tests/                            # deterministic provider + temp SQLite
 postman/                          # live end-to-end collection
+requirements-langchain.txt        # optional LangChain dependency set
 ```
 
 ---

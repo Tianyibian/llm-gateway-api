@@ -36,4 +36,5 @@ async def health() -> dict[str, str]:
         "status": "ok",
         "configured_provider": settings.llm_provider,
         "provider": LLMServiceFactory(settings).resolve_provider(),
+        "orchestrator": settings.llm_orchestrator,
     }

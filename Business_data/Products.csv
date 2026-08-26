@@ -1,0 +1,101 @@
+"ProductID","ProductName","SupplierID","CategoryID","QuantityPerUnit","UnitPrice","UnitsInStock","UnitsOnOrder","ReorderLevel","Discontinued"
+1,Philips Hue Smart Lock Max,7,6,"1 device with accessories",5672.50,615,34,17,0
+2,Samsung SmartThings Smart Sensor Plus,4,15,"1 set per box",873.65,124,69,96,0
+3,Arlo Smart Sensor Indoor,11,15,"1 bundle",3454.07,233,106,71,0
+4,Ecobee Home Hub Max,9,14,"6-pack",3626.85,2,29,34,0
+5,TP-Link Kasa Smart Lighting Mini,14,8,"1 bundle",4393.90,919,184,36,0
+6,GE Appliances Smart Plug Essential,6,7,"1 bundle",260.89,154,93,88,0
+7,Apple Home Smart Doorbell Outdoor,3,4,"1 device with accessories",6683.57,376,46,21,0
+8,Arlo Smart Display Max,11,2,"6-pack",3142.43,117,24,23,0
+9,Philips Hue Streaming Device Essential,7,12,"6-pack",9286.38,465,89,78,0
+10,Apple Home Smart TV Premium,3,13,"1 starter kit",2854.51,236,164,49,0
+11,Samsung SmartThings Smart Thermostat Pro,4,3,"1 bundle",1654.62,16,157,35,0
+12,Honeywell Home Home Hub Indoor,8,14,"1 replacement unit",1806.41,835,27,70,0
+13,Google Nest Smart Lighting Plus,2,8,"1 set per box",9132.54,872,65,19,0
+14,LG Electronics Smart Lock Indoor,5,6,"1 starter kit",2229.81,19,108,28,0
+15,Eufy Smart Speaker Essential,13,1,"4-pack",2722.55,544,17,43,0
+16,Belkin Wemo Security System Pro,15,11,"1 replacement unit",1143.38,673,138,12,1
+17,Honeywell Home Streaming Device Premium,8,12,"1 bundle",1003.99,644,197,40,0
+18,Arlo Smart Lock Ultra,11,6,"1 replacement unit",5828.32,633,27,93,0
+19,Wyze Streaming Device Outdoor,12,12,"1 set per box",6992.04,847,157,79,1
+20,Arlo Home Hub Max,11,14,"1 device with accessories",6745.18,729,127,40,1
+21,Philips Hue Robot Vacuum Ultra,7,9,"6-pack",6983.60,301,114,66,0
+22,Google Nest Smart TV Pro,2,13,"3-pack",4090.62,733,27,35,0
+23,LG Electronics Smart Doorbell Plus,5,4,"2 units per pack",6055.12,105,197,51,0
+24,Ring Robot Vacuum Standard,10,9,"1 starter kit",7529.74,669,110,81,0
+25,Samsung SmartThings Smart Camera Essential,4,5,"1 device with accessories",1409.80,553,149,85,0
+26,Philips Hue Air Purifier Plus,7,10,"6-pack",4810.23,777,4,87,0
+27,Belkin Wemo Smart Speaker Outdoor,15,1,"1 bundle",9783.21,398,13,33,0
+28,Samsung SmartThings Smart Lighting Standard,4,8,"4-pack",612.27,629,197,86,0
+29,Honeywell Home Security System Pro,8,11,"1 starter kit",515.38,299,42,90,0
+30,GE Appliances Smart Lock Standard,6,6,"1 replacement unit",8350.62,356,102,67,0
+31,TP-Link Kasa Smart Plug Plus,14,7,"2 units per pack",7017.13,490,32,40,1
+32,LG Electronics Home Hub Ultra,5,14,"2 units per pack",8405.37,474,89,94,0
+33,Arlo Smart Thermostat Max,11,3,"1 unit per box",223.04,330,200,93,0
+34,Arlo Smart TV Plus,11,13,"1 starter kit",2893.75,464,60,69,0
+35,TP-Link Kasa Air Purifier Max,14,10,"1 device with accessories",5418.72,173,187,83,0
+36,Arlo Robot Vacuum Mini,11,9,"1 replacement unit",275.83,172,184,44,0
+37,Google Nest Smart Lighting Mini,2,8,"1 set per box",2956.67,482,67,37,0
+38,GE Appliances Smart Display Ultra,6,2,"3-pack",9404.71,236,161,30,0
+39,Eufy Smart Plug Standard,13,7,"1 replacement unit",631.13,952,157,32,0
+40,TP-Link Kasa Smart Speaker Pro,14,1,"4-pack",3817.23,280,177,44,0
+41,Wyze Home Hub Outdoor,12,14,"4-pack",3814.35,378,191,80,0
+42,Google Nest Smart Doorbell Essential,2,4,"6-pack",9592.10,380,83,93,0
+43,Belkin Wemo Smart Display Standard,15,2,"1 set per box",2808.17,118,41,35,0
+44,Honeywell Home Smart Thermostat Outdoor,8,3,"2 units per pack",4467.77,361,50,77,0
+45,Belkin Wemo Smart Plug Plus,15,7,"1 replacement unit",5327.56,503,31,29,0
+46,Ring Smart Lock Ultra,10,6,"4-pack",6269.37,306,137,89,0
+47,Arlo Smart Camera Mini,11,5,"1 bundle",8057.51,994,119,75,0
+48,Samsung SmartThings Air Purifier Indoor,4,10,"1 device with accessories",7652.12,596,193,27,0
+49,GE Appliances Smart Speaker Standard,6,1,"1 unit per box",7367.78,286,120,61,0
+50,Belkin Wemo Smart Doorbell Mini,15,4,"1 bundle",4946.77,997,146,46,0
+51,Google Nest Smart Thermostat Outdoor,2,3,"1 bundle",1758.72,431,187,77,0
+52,Wyze Smart Display Ultra,12,2,"1 unit per box",9299.12,713,194,15,0
+53,Google Nest Smart Display Standard,2,2,"1 device with accessories",6853.93,84,21,97,0
+54,Ecobee Home Hub Outdoor,9,14,"1 replacement unit",5078.09,319,153,92,0
+55,Honeywell Home Smart Speaker Plus,8,1,"1 unit per box",374.52,991,3,80,0
+56,LG Electronics Streaming Device Outdoor,5,12,"1 device with accessories",8144.74,502,183,80,0
+57,Eufy Smart Plug Pro,13,7,"2 units per pack",719.91,261,133,43,0
+58,Ecobee Smart Thermostat Indoor,9,3,"1 device with accessories",250.07,772,162,21,1
+59,Ring Smart Plug Pro,10,7,"1 bundle",6854.65,685,73,76,0
+60,Wyze Smart Doorbell Essential,12,4,"4-pack",4787.81,221,141,84,0
+61,Ecobee Smart Display Pro,9,2,"1 unit per box",8699.12,697,49,36,0
+62,Belkin Wemo Smart TV Pro,15,13,"1 unit per box",5158.06,114,72,78,0
+63,Arlo Smart Doorbell Outdoor,11,4,"1 starter kit",1523.79,536,74,68,1
+64,Google Nest Smart Lock Pro,2,6,"1 replacement unit",942.81,351,130,14,0
+65,Honeywell Home Smart Camera Mini,8,5,"1 device with accessories",4384.84,528,67,93,0
+66,Apple Home Smart Display Max,3,2,"2 units per pack",1890.93,70,166,83,0
+67,Arlo Smart Doorbell Plus,11,4,"1 starter kit",5087.88,720,64,32,0
+68,Arlo Smart Speaker Premium,11,1,"1 starter kit",5196.15,80,158,20,0
+69,Honeywell Home Air Purifier Indoor,8,10,"1 bundle",1967.39,719,97,87,0
+70,Honeywell Home Smart Plug Essential,8,7,"1 unit per box",3676.21,735,123,87,0
+71,Apple Home Smart Display Premium,3,2,"4-pack",8350.43,779,4,46,0
+72,TP-Link Kasa Security System Standard,14,11,"6-pack",9860.10,113,67,40,0
+73,Arlo Smart Camera Ultra,11,5,"1 starter kit",4549.24,864,177,14,0
+74,Ecobee Smart TV Ultra,9,13,"6-pack",1705.47,157,178,59,0
+75,Belkin Wemo Smart Doorbell Standard,15,4,"1 starter kit",4071.78,705,1,15,0
+76,Arlo Smart Lighting Outdoor,11,8,"1 starter kit",9577.73,86,84,63,0
+77,Ring Smart Speaker Plus,10,1,"1 unit per box",208.26,952,30,21,0
+78,Ecobee Smart Camera Pro,9,5,"1 device with accessories",5128.91,642,94,38,0
+79,Ring Smart Camera Premium,10,5,"1 set per box",8967.91,61,127,60,0
+80,Ring Streaming Device Mini,10,12,"1 device with accessories",8109.91,768,158,74,0
+81,Amazon Devices Air Purifier Outdoor,1,10,"1 bundle",2059.42,867,68,28,0
+82,Apple Home Smart Doorbell Essential,3,4,"2 units per pack",4709.51,779,37,13,0
+83,GE Appliances Streaming Device Indoor,6,12,"3-pack",9685.12,984,55,92,0
+84,Eufy Smart Doorbell Plus,13,4,"1 set per box",4729.24,144,28,65,0
+85,Wyze Smart Thermostat Max,12,3,"3-pack",9824.36,754,85,41,0
+86,Ring Security System Premium,10,11,"1 replacement unit",5222.07,943,53,60,0
+87,Ring Smart Speaker Plus,10,1,"2 units per pack",4104.32,947,66,82,0
+88,Samsung SmartThings Smart TV Ultra,4,13,"1 device with accessories",5539.41,876,77,54,0
+89,Ring Home Hub Pro,10,14,"1 starter kit",4195.92,962,102,26,0
+90,Wyze Smart Speaker Essential,12,1,"1 replacement unit",5222.53,196,34,87,0
+91,Ring Smart Lighting Premium,10,8,"3-pack",6457.22,383,32,96,0
+92,TP-Link Kasa Smart Speaker Outdoor,14,1,"3-pack",1248.27,525,174,13,0
+93,GE Appliances Smart Display Max,6,2,"1 bundle",6390.49,750,44,94,0
+94,GE Appliances Robot Vacuum Standard,6,9,"1 unit per box",9508.27,842,179,42,0
+95,Google Nest Smart Display Max,2,2,"1 unit per box",1408.60,258,97,26,0
+96,Amazon Devices Smart Lighting Indoor,1,8,"6-pack",1219.20,577,150,31,0
+97,Eufy Smart Thermostat Ultra,13,3,"4-pack",1668.64,907,51,60,0
+98,Ring Smart Plug Indoor,10,7,"4-pack",1680.82,162,64,85,0
+99,Ecobee Home Hub Ultra,9,14,"1 device with accessories",961.07,630,13,18,0
+100,Belkin Wemo Air Purifier Mini,15,10,"4-pack",404.97,18,176,87,0

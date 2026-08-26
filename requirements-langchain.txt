@@ -1,0 +1,5 @@
+# Optional orchestration layer. LangChain 1.x requires Python 3.10 or newer.
+-r requirements.txt
+langchain>=1,<2
+langchain-openai>=1,<2
+langchain-ollama>=1,<2
