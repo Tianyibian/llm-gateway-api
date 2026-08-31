@@ -26,12 +26,16 @@ class Settings(BaseSettings):
     database_max_overflow: int = 10
     database_pool_timeout_seconds: float = 30.0
     database_pool_recycle_seconds: int = 1800
+    business_data_dir: str = "Business_data"
 
     openai_api_key: Optional[SecretStr] = None
     openai_base_url: Optional[str] = None
     openai_chat_model: str = "gpt-5.6-luna"
     openai_reason_model: str = "gpt-5.6-terra"
     openai_recommendation_model: str = "gpt-5.6-terra"
+    openai_vision_model: str = "gpt-5.6-luna"
+    openai_vision_detail: Literal["low", "high", "original", "auto"] = "high"
+    vision_max_image_bytes: int = 10 * 1024 * 1024
     openai_reasoning_effort: Literal[
         "none", "low", "medium", "high", "xhigh", "max"
     ] = "medium"

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Aster routes customer questions and answers with grounded business data."
+    />
+    <title>Aster Customer Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="Assistant information">
+        <a class="brand" href="/" aria-label="Aster home">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <span>
+            <strong>Aster</strong>
+            <small>Customer intelligence</small>
+          </span>
+        </a>
+
+        <section class="sidebar-copy">
+          <p class="eyebrow">LANGGRAPH ROUTER</p>
+          <h1>One assistant, the right source.</h1>
+          <p>
+            Ask naturally. Aster classifies each request, selects a workflow,
+            and shows which business data informed the answer.
+          </p>
+        </section>
+
+        <div class="route-list" aria-label="Available routes">
+          <div><span class="route-dot general"></span>General assistance</div>
+          <div><span class="route-dot product"></span>Product catalog</div>
+          <div><span class="route-dot return"></span>Return policy — staged</div>
+        </div>
+
+        <footer>
+          <span class="status-dot"></span>
+          Local development environment
+        </footer>
+      </aside>
+
+      <section class="workspace" aria-label="Chat with Aster">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">ASSISTANT</p>
+            <h2>How can I help?</h2>
+          </div>
+          <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">API docs</a>
+        </header>
+
+        <div id="conversation" class="conversation" aria-live="polite">
+          <article class="message assistant-message">
+            <div class="avatar" aria-hidden="true">A</div>
+            <div class="message-body">
+              <div class="message-meta">Aster</div>
+              <p>
+                I can answer general questions and search the live demonstration
+                product catalog for price, inventory, supplier, and category information.
+                Attach an image when you want OpenAI vision to describe or read it.
+              </p>
+            </div>
+          </article>
+
+          <section class="suggestions" aria-label="Suggested questions">
+            <button type="button" data-prompt="What can you help me with?">
+              What can you help me with?
+            </button>
+            <button type="button" data-prompt="Show me Philips Hue smart locks and their inventory.">
+              Find Philips Hue smart locks
+            </button>
+            <button type="button" data-prompt="Can I return an installed smart lock?">
+              Ask about a return
+            </button>
+          </section>
+        </div>
+
+        <form id="composer" class="composer">
+          <div id="attachment-preview" class="attachment-preview" hidden>
+            <img id="attachment-image" alt="Selected upload preview" />
+            <div>
+              <strong id="attachment-name"></strong>
+              <span>Image analysis uses OpenAI</span>
+            </div>
+            <button id="remove-attachment" type="button" aria-label="Remove image">×</button>
+          </div>
+          <input
+            id="image-input"
+            class="sr-only"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+          />
+          <label class="attach-button" for="image-input" aria-label="Attach an image" title="Attach image">
+            <span aria-hidden="true">＋</span>
+          </label>
+          <label class="sr-only" for="query">Message Aster</label>
+          <textarea
+            id="query"
+            name="query"
+            rows="1"
+            maxlength="10000"
+            placeholder="Ask about products, inventory, or anything else…"
+          ></textarea>
+          <button id="send-button" type="submit" aria-label="Send message">
+            <span>Send</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+          <p class="composer-note">
+            Product answers use demonstration data. Image analysis sends the selected image to OpenAI and may incur API usage charges.
+          </p>
+        </form>
+      </section>
+    </main>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

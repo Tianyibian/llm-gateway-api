@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 from collections.abc import AsyncIterator, Sequence
 import json
 
@@ -8,10 +9,14 @@ from fastapi.testclient import TestClient
 import pytest
 
 from app.api.conversation_routes import get_conversation_service
-from app.api.routes import get_llm_factory
+from app.api.routes import (
+    get_assistant_service,
+    get_llm_factory,
+    get_query_classifier,
+)
 from app.db.session import build_database, create_tables
 from app.main import app
-from app.models.schemas import Message
+from app.models.schemas import Message, QueryClassification, QueryRoute
 from app.services.base import LLMService, ServiceType
 from app.services.conversation_service import ConversationService
 
@@ -61,6 +66,75 @@ class FailingFactory:
         return FailingService()
 
 
+class FakeClassifier:
+    def __init__(self) -> None:
+        self.queries: list[str] = []
+
+    async def classify(self, query: str, *, history=None) -> QueryClassification:
+        del history
+        self.queries.append(query)
+        return QueryClassification(
+            route=QueryRoute.RETURN_SEARCH,
+            reason="The query requires the return policy.",
+            confidence=0.98,
+        )
+
+
+class FakeAssistantService:
+    provider = "fake"
+    model = "fake-assistant-model"
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    async def stream(
+        self,
+        query: str,
+        *,
+        history=None,
+        image_bytes=None,
+        image_mime_type=None,
+    ):
+        self.calls.append(
+            {
+                "query": query,
+                "history": history,
+                "image_bytes": image_bytes,
+                "image_mime_type": image_mime_type,
+            }
+        )
+        if image_bytes is not None:
+            yield "route", {
+                "route": "vision_analysis",
+                "reason": "An image was attached to the request.",
+                "confidence": 1.0,
+            }
+            yield "delta", {"content": "A small test image."}
+            return
+        yield "route", {
+            "route": "product_search",
+            "reason": "The query requests product inventory.",
+            "confidence": 0.97,
+        }
+        yield "sources", {
+            "sources": ["Business_data/Products.csv"],
+            "products": [
+                {
+                    "product_id": 1,
+                    "product_name": "Philips Hue Smart Lock Max",
+                    "category": "Smart Lock",
+                    "supplier": "Philips Hue",
+                    "quantity_per_unit": "1 device with accessories",
+                    "unit_price": 5672.5,
+                    "units_in_stock": 615,
+                    "units_on_order": 34,
+                    "discontinued": False,
+                }
+            ],
+        }
+        yield "delta", {"content": f"Catalog answer for: {query}"}
+
+
 @pytest.fixture
 def api_client(tmp_path):
     engine, session_factory = build_database(
@@ -96,6 +170,14 @@ def test_health(api_client) -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_root_serves_assistant_frontend(api_client) -> None:
+    client, _ = api_client
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Aster Customer Assistant" in response.text
+    assert "/static/app.js" in response.text
 
 
 def test_chat_creates_conversation_and_streams_sse(api_client) -> None:
@@ -338,6 +420,149 @@ def test_reason_uses_reason_service(api_client) -> None:
     assert response.status_code == 200
     assert '"service": "reason"' in response.text
     assert '"model": "fake-reason-model"' in response.text
+
+
+def test_classify_returns_validated_route(api_client) -> None:
+    client, _ = api_client
+    classifier = FakeClassifier()
+    app.dependency_overrides[get_query_classifier] = lambda: classifier
+
+    response = client.post(
+        "/api/classify",
+        json={"query": "  Can I return an installed smart lock?  "},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "route": "return_search",
+        "reason": "The query requires the return policy.",
+        "confidence": 0.98,
+    }
+    assert classifier.queries == ["Can I return an installed smart lock?"]
+
+
+def test_classify_rejects_blank_query(api_client) -> None:
+    client, _ = api_client
+    app.dependency_overrides[get_query_classifier] = lambda: FakeClassifier()
+    response = client.post("/api/classify", json={"query": "   "})
+    assert response.status_code == 422
+
+
+def test_assistant_stream_contains_route_sources_and_real_delta(api_client) -> None:
+    client, _ = api_client
+    service = FakeAssistantService()
+    app.dependency_overrides[get_assistant_service] = lambda: service
+
+    response = client.post(
+        "/api/assistant",
+        json={
+            "query": "Show me Philips Hue smart lock inventory.",
+            "user_id": "assistant-user",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert '"service": "assistant"' in response.text
+    assert 'event: route' in response.text
+    assert '"route": "product_search"' in response.text
+    assert 'event: sources' in response.text
+    assert '"product_name": "Philips Hue Smart Lock Max"' in response.text
+    assert 'data: {"content": "Catalog answer for: Show me Philips Hue smart lock inventory."}' in response.text
+    assert 'data: "[DONE]"' in response.text
+
+    conversation_id = _sse_payload(response.text, "metadata")["conversation_id"]
+    messages = client.get(
+        f"/api/conversations/{conversation_id}/messages",
+        params={"user_id": "assistant-user"},
+    )
+    assert [(item["role"], item["content"]) for item in messages.json()] == [
+        ("user", "Show me Philips Hue smart lock inventory."),
+        (
+            "assistant",
+            "Catalog answer for: Show me Philips Hue smart lock inventory.",
+        ),
+    ]
+
+
+def test_second_assistant_turn_receives_persisted_history(api_client) -> None:
+    client, _ = api_client
+    service = FakeAssistantService()
+    app.dependency_overrides[get_assistant_service] = lambda: service
+
+    first = client.post(
+        "/api/assistant",
+        json={"query": "Remember product A.", "user_id": "assistant-user"},
+    )
+    conversation_id = _sse_payload(first.text, "metadata")["conversation_id"]
+    second = client.post(
+        "/api/assistant",
+        json={
+            "query": "Which product did I mention?",
+            "user_id": "assistant-user",
+            "conversation_id": conversation_id,
+        },
+    )
+
+    assert second.status_code == 200
+    assert service.calls[1]["history"] == [
+        ("user", "Remember product A."),
+        ("assistant", "Catalog answer for: Remember product A."),
+    ]
+
+
+def test_assistant_vision_branch_validates_analyzes_and_persists_text(api_client) -> None:
+    client, _ = api_client
+    service = FakeAssistantService()
+    app.dependency_overrides[get_assistant_service] = lambda: service
+    png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    )
+
+    response = client.post(
+        "/api/assistant",
+        data={"query": "  What is shown?  ", "user_id": "vision-user"},
+        files={"image": ("sample.png", png, "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert '"service": "assistant"' in response.text
+    assert '"route": "vision_analysis"' in response.text
+    assert 'data: {"content": "A small test image."}' in response.text
+    assert 'data: "[DONE]"' in response.text
+    assert service.calls == [
+        {
+            "query": "What is shown?",
+            "history": [],
+            "image_bytes": png,
+            "image_mime_type": "image/png",
+        }
+    ]
+
+    conversation_id = _sse_payload(response.text, "metadata")["conversation_id"]
+    messages = client.get(
+        f"/api/conversations/{conversation_id}/messages",
+        params={"user_id": "vision-user"},
+    )
+    assert [(item["role"], item["content"]) for item in messages.json()] == [
+        ("user", "What is shown?"),
+        ("assistant", "A small test image."),
+    ]
+
+
+def test_assistant_rejects_non_image_upload(api_client) -> None:
+    client, _ = api_client
+    app.dependency_overrides[get_assistant_service] = lambda: FakeAssistantService()
+
+    response = client.post(
+        "/api/assistant",
+        data={"query": "Read this.", "user_id": "vision-user"},
+        files={"image": ("notes.txt", b"not an image", "text/plain")},
+    )
+
+    assert response.status_code == 422
+    assert "not a valid supported image" in response.json()["detail"]
 
 
 def test_chat_requires_user_id(api_client) -> None:

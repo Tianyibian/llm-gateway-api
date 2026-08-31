@@ -7,10 +7,14 @@ from openai import AsyncOpenAI
 
 from app.core.config import Settings, get_settings
 from app.services.base import LLMService, ServiceType
+from app.services.assistant_service import AssistantGraphService
 from app.services.errors import LLMConfigurationError
 from app.services.langchain_service import LangChainChatService
 from app.services.ollama_service import OllamaChatService
 from app.services.openai_service import OpenAIResponsesService
+from app.services.product_catalog import ProductCatalog
+from app.services.query_classifier import QueryClassifier
+from app.services.vision_service import OpenAIVisionService
 
 
 class LLMServiceFactory:
@@ -57,6 +61,104 @@ class LLMServiceFactory:
             return self._create_ollama(service_type)
         raise LLMConfigurationError(f"Unsupported LLM provider: {provider}")
 
+    def create_classifier(self) -> QueryClassifier:
+        """Create the LangChain structured-output query classifier."""
+        provider = self.resolve_provider()
+        model_by_provider = {
+            "openai": self.settings.openai_chat_model,
+            "ollama": self.settings.ollama_chat_model,
+        }
+        try:
+            model = model_by_provider[provider]
+        except KeyError as exc:
+            raise LLMConfigurationError(
+                f"Unsupported classifier provider: {provider}"
+            ) from exc
+
+        model_client = self._build_langchain_model(
+            provider=provider,
+            model=model,
+            service_type=ServiceType.CHAT,
+            reasoning_override=False,
+        )
+        return QueryClassifier.from_model(
+            model_client=model_client,
+            provider=provider,
+            model=model,
+        )
+
+    def create_assistant(self) -> AssistantGraphService:
+        """Create the LangGraph assistant and its route-specific dependencies."""
+        provider = self.resolve_provider()
+        model_by_provider = {
+            "openai": self.settings.openai_chat_model,
+            "ollama": self.settings.ollama_chat_model,
+        }
+        try:
+            model = model_by_provider[provider]
+        except KeyError as exc:
+            raise LLMConfigurationError(
+                f"Unsupported assistant provider: {provider}"
+            ) from exc
+
+        classifier_client = self._build_langchain_model(
+            provider=provider,
+            model=model,
+            service_type=ServiceType.CHAT,
+            reasoning_override=False,
+        )
+        answer_client = self._build_langchain_model(
+            provider=provider,
+            model=model,
+            service_type=ServiceType.CHAT,
+            reasoning_override=True if provider == "ollama" else None,
+        )
+        classifier = QueryClassifier.from_model(
+            model_client=classifier_client,
+            provider=provider,
+            model=model,
+        )
+        catalog = ProductCatalog(self.settings.business_data_dir)
+        try:
+            vision_service = self.create_vision_service()
+        except LLMConfigurationError:
+            vision_service = None
+        return AssistantGraphService.from_model(
+            classifier=classifier,
+            model_client=answer_client,
+            product_catalog=catalog,
+            vision_service=vision_service,
+            provider=provider,
+            model=model,
+        )
+
+    def create_vision_service(self) -> OpenAIVisionService:
+        """Create an OpenAI-only image understanding service."""
+        if self.settings.openai_api_key is None:
+            raise LLMConfigurationError(
+                "OPENAI_API_KEY is required for image analysis. Add it to the local .env file."
+            )
+        api_key = self.settings.openai_api_key.get_secret_value().strip()
+        if api_key in {
+            "",
+            "your_openai_api_key_here",
+            "replace_with_your_own_secret_key",
+        }:
+            raise LLMConfigurationError(
+                "OPENAI_API_KEY is required for image analysis. Add a real key to .env."
+            )
+
+        client = AsyncOpenAI(
+            api_key=api_key,
+            base_url=self.settings.openai_base_url,
+            timeout=self.settings.openai_timeout_seconds,
+        )
+        return OpenAIVisionService(
+            client=client,
+            model=self.settings.openai_vision_model,
+            detail=self.settings.openai_vision_detail,
+        )
+
     def _create_langchain(
         self,
         service_type: ServiceType,
@@ -100,6 +202,7 @@ class LLMServiceFactory:
         provider: str,
         model: str,
         service_type: ServiceType,
+        reasoning_override: bool | None = None,
     ) -> Any:
         if sys.version_info < (3, 10):
             raise LLMConfigurationError(
@@ -145,9 +248,13 @@ class LLMServiceFactory:
                 base_url=self.settings.ollama_base_url,
                 keep_alive=self.settings.ollama_keep_alive,
                 reasoning=(
-                    self.settings.ollama_chat_think
-                    if service_type is ServiceType.CHAT
-                    else True
+                    reasoning_override
+                    if reasoning_override is not None
+                    else (
+                        self.settings.ollama_chat_think
+                        if service_type is ServiceType.CHAT
+                        else True
+                    )
                 ),
             )
 

@@ -26,6 +26,8 @@ of replaying history on every request.
 | **Streaming by default** | Both endpoints emit Server-Sent Events (`metadata` → `delta` → `done`), so tokens render as they are generated. |
 | **Provider-agnostic** | `LLMServiceFactory` returns an adapter chosen from configuration. Swapping OpenAI ⇄ Ollama requires no client or endpoint changes. |
 | **Optional orchestration** | Use the direct provider adapters by default, or enable LangChain through configuration without changing routes, persistence, or clients. |
+| **LangGraph assistant** | Classifies each query, follows a conditional graph branch, and streams a grounded answer with visible route and source metadata. |
+| **Image understanding** | Validates an uploaded image locally, then streams analysis from OpenAI vision without persisting the upload. |
 | **Stateful conversations** | Server-side history: send only the new user turn and the service prepends stored context. |
 | **Durable & transactional** | Async SQLAlchemy + PostgreSQL persistence; a turn is committed atomically, and a conversation auto-created by a failed first stream is cleaned up rather than left orphaned. |
 | **Versioned schema** | Alembic migrations are tracked independently of application startup — no implicit schema mutation on boot. |
@@ -38,8 +40,9 @@ of replaying history on every request.
 
 ```
                     ┌──────────────────────────────┐
-   POST /api/chat   │        FastAPI  layer        │
-   POST /api/reason │  routes · Pydantic schemas   │
+   POST /api/chat      │        FastAPI  layer        │
+   POST /api/reason    │  routes · Pydantic schemas   │
+   POST /api/assistant │   SSE · browser frontend    │
         ──────────► │        SSE  response         │
                     └───────────────┬──────────────┘
                                     │
@@ -78,6 +81,8 @@ adapter patterns.
 |---|---|---|
 | `POST` | `/api/chat` | Stateful multi-turn conversation. Returns a `conversation_id`; reuse it and send only the new turn. |
 | `POST` | `/api/reason` | Stateless reasoning-oriented response — a reasoned final answer plus a concise explanation (not hidden chain of thought). |
+| `POST` | `/api/classify` | Structured query routing: `general_search`, `return_search`, or `product_search`. |
+| `POST` | `/api/assistant` | Stateful multimodal LangGraph assistant. Accepts text JSON or multipart image input and persists completed turns. |
 
 ### Conversation management
 
@@ -109,14 +114,17 @@ Interactive docs are served at `/docs`; liveness at `/health`.
 ## Quick start
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-python -m pip install -r requirements.txt
+python3.13 -m venv .venv-langchain && source .venv-langchain/bin/activate
+python -m pip install -r requirements-langchain.txt
 
 cp .env.example .env          # then set LLM_PROVIDER (and a key, if using OpenAI)
 docker compose up -d postgres  # start PostgreSQL 17 on localhost:5432
 alembic upgrade head          # create / update the schema
 uvicorn app.main:app --reload
 ```
+
+Open `http://127.0.0.1:8000` for the local Aster assistant interface. It is
+served by FastAPI and requires no separate JavaScript build process.
 
 ```bash
 curl -N -X POST http://127.0.0.1:8000/api/chat \
@@ -141,6 +149,10 @@ curl -N -X POST http://127.0.0.1:8000/api/chat \
 | `DATABASE_POOL_SIZE` / `DATABASE_MAX_OVERFLOW` | Base and burst capacity for SQLAlchemy's async connection pool |
 | `DATABASE_POOL_TIMEOUT_SECONDS` | Maximum wait for an available pooled connection |
 | `DATABASE_POOL_RECYCLE_SECONDS` | Maximum lifetime before a pooled connection is replaced |
+| `BUSINESS_DATA_DIR` | Directory containing `Products.csv`, `Categories.csv`, and `Suppliers.csv` |
+| `OPENAI_VISION_MODEL` | OpenAI model used only for explicit image-analysis requests |
+| `OPENAI_VISION_DETAIL` | `low`, `high`, `original`, or `auto`; defaults to `high` |
+| `VISION_MAX_IMAGE_BYTES` | Local upload limit; defaults to 10 MB |
 
 Both providers share one request schema and one SSE contract, so switching is a
 configuration change — clients and tests stay identical. Restart Uvicorn after
@@ -154,8 +166,8 @@ wraps that provider's LangChain chat model behind the same local `LLMService`
 interface. Conversation persistence, ownership checks, SSE, and API contracts
 do not change.
 
-LangChain 1.x requires Python 3.10 or newer. Install the optional dependency set
-in a suitable virtual environment:
+LangChain 1.x and the assistant graph require Python 3.10 or newer. This project
+uses the Python 3.13 `.venv-langchain` environment for application development:
 
 ```bash
 python3.13 -m venv .venv-langchain
@@ -172,6 +184,76 @@ LLM_PROVIDER=ollama
 
 Use `LLM_PROVIDER=openai` instead to run the same adapter through OpenAI. Set
 `LLM_ORCHESTRATOR=native` to return to the direct SDK/HTTP implementations.
+
+The `/api/classify` endpoint always uses the optional LangChain runtime because
+it combines `ChatPromptTemplate` with the provider model's structured-output
+interface. Classification completes before routing and therefore returns one
+validated JSON object rather than an SSE stream. Route-specific search is
+intentionally not executed yet.
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/classify \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"Can I return a smart lock after installation?"}'
+```
+
+### LangGraph assistant
+
+The browser UI and `/api/assistant` use a compiled `StateGraph`:
+
+```text
+START -> detect_modality
+              |
+              +-> vision_answer (OpenAI) ------------> END
+              +-> classify_query
+                        |
+                        +-> general_answer ---------------------> END
+                        +-> search_products -> product_answer -> END
+                        +-> return_not_connected --------------> END
+```
+
+The graph has separate input, output, and overall state schemas. Every node
+returns only its state update. The conditional edge reads `state["route"]` and
+selects the next node. Product search joins the local products, categories, and
+suppliers CSV files in memory, then supplies only the best matching records to
+the model. SSE events expose `metadata`, `route`, optional `sources`, real model
+`delta` tokens, and `done`. Before execution, the endpoint loads the owned
+conversation history from PostgreSQL. After a successful stream, it atomically
+saves the user query and complete assistant answer as one turn.
+
+The CSV search is intentionally a local demonstration implementation. In a
+production system, exact prices, stock, and availability should come from the
+transactional product service or PostgreSQL rather than embeddings or static
+files. PostgreSQL full-text search or trigram indexes work well for catalog
+names; OpenSearch/Elasticsearch becomes useful for larger faceted catalogs.
+Use pgvector or another vector index for semantic descriptions and support
+documents, while preserving relational filters and source/version metadata.
+Policies belong in a versioned RAG knowledge pipeline with citations. A hybrid
+router can therefore send exact business facts to SQL/service APIs and
+unstructured policy questions to retrieval.
+
+### Image analysis
+
+Attaching an image in the browser sends a multipart request to the same
+`/api/assistant` endpoint used for text. The `detect_modality` node routes it to
+the graph's `vision_answer` branch. This branch is intentionally OpenAI-only
+even when `LLM_PROVIDER=ollama`; the
+OpenAI key remains server-side in `.env`, and the browser never receives it.
+The backend verifies the actual image content with Pillow, permits PNG, JPEG,
+WEBP, and non-animated GIF, enforces a 10 MB local limit, converts the bytes to
+a Base64 data URL, and streams only response text. The application does not
+save the image bytes in PostgreSQL or the project directory. It saves the
+question and textual image analysis, so later turns can use that text as
+conversation context. Image inputs consume
+billable tokens, so the API is called only after the user explicitly attaches
+and sends an image.
+
+```bash
+curl -N -X POST http://127.0.0.1:8000/api/assistant \
+  -F 'query=Read the visible text in this image.' \
+  -F 'user_id=demo-user' \
+  -F 'image=@/absolute/path/to/image.png;type=image/png'
+```
 
 **Secrets:** `.env` is git-ignored and only `.env.example` is committed; keys
 never appear in source, docs, or requests. Verify with `git check-ignore -v .env`.
@@ -259,7 +341,12 @@ app/
 ├── services/langchain_service.py # optional LangChain adapter
 ├── services/openai_service.py    # OpenAI adapter
 ├── services/ollama_service.py    # Ollama streaming adapter
+├── services/query_classifier.py # prompt + structured-output routing
+├── services/assistant_service.py # StateGraph + conditional branches
+├── services/product_catalog.py   # local CSV search adapter
+├── services/vision_service.py   # OpenAI Responses image analysis
 ├── services/conversation_service.py
+├── static/                       # local assistant web interface
 └── main.py
 compose.yaml                      # local PostgreSQL 17 service
 migrations/                       # Alembic revisions

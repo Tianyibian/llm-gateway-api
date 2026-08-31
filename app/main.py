@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.conversation_routes import router as conversation_router
 from app.api.routes import router
@@ -21,13 +24,21 @@ app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
     description=(
-        "Database-backed, stateful chat and stateless reasoning endpoints "
-        "with streaming OpenAI and Ollama adapters."
+        "A streaming LLM gateway with stateful conversations, LangGraph routing, "
+        "and grounded business-data answers through OpenAI or Ollama."
     ),
     lifespan=lifespan,
 )
 app.include_router(router)
 app.include_router(conversation_router)
+
+static_dir = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def assistant_ui() -> FileResponse:
+    return FileResponse(static_dir / "index.html")
 
 
 @app.get("/health", tags=["system"])

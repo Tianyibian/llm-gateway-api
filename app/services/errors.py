@@ -4,3 +4,7 @@ class LLMConfigurationError(RuntimeError):
 
 class ConversationNotFoundError(LookupError):
     """Raised when a conversation does not exist or belongs to another user."""
+
+
+class InvalidImageError(ValueError):
+    """Raised when an uploaded image is unsupported or cannot be decoded."""

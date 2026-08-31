@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from enum import Enum
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -21,6 +22,67 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Message] = Field(min_length=1, max_length=100)
+
+
+class QueryRoute(str, Enum):
+    """Supported destinations for the first-stage query router."""
+
+    GENERAL_SEARCH = "general_search"
+    RETURN_SEARCH = "return_search"
+    PRODUCT_SEARCH = "product_search"
+
+
+class ClassificationRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=10_000)
+
+    @field_validator("query")
+    @classmethod
+    def query_must_not_be_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("query must not be blank")
+        return value
+
+
+class QueryClassification(BaseModel):
+    route: QueryRoute = Field(description="The search route selected for the query.")
+    reason: str = Field(
+        min_length=1,
+        max_length=500,
+        description="A concise, user-facing reason for the selected route.",
+    )
+    confidence: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="Confidence in the route selection, from 0.0 to 1.0.",
+    )
+
+
+class AssistantRequest(ClassificationRequest):
+    """A stateful user query sent through the LangGraph assistant."""
+
+    user_id: str = Field(min_length=1, max_length=255)
+    conversation_id: Optional[UUID] = None
+
+    @field_validator("user_id")
+    @classmethod
+    def assistant_user_id_must_not_be_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("user_id must not be blank")
+        return value
+
+
+class ProductMatch(BaseModel):
+    product_id: int
+    product_name: str
+    category: str
+    supplier: str
+    quantity_per_unit: str
+    unit_price: float
+    units_in_stock: int
+    units_on_order: int
+    discontinued: bool
 
 
 class ConversationChatRequest(ChatRequest):

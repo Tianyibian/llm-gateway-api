@@ -84,3 +84,20 @@ def test_auto_provider_uses_openai_when_key_exists() -> None:
 
     assert factory.resolve_provider() == "openai"
     assert service.provider == "openai"
+
+
+def test_factory_builds_openai_vision_independently_of_default_provider() -> None:
+    factory = LLMServiceFactory(
+        Settings(
+            _env_file=None,
+            llm_provider="ollama",
+            openai_api_key="test-key",
+            openai_vision_model="gpt-test-vision",
+        )
+    )
+
+    service = factory.create_vision_service()
+
+    assert service.provider == "openai"
+    assert service.model == "gpt-test-vision"
+    assert service.detail == "high"

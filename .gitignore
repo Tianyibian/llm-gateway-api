@@ -3,6 +3,7 @@
 !.env.example
 .venv/
 .venv-langchain/
+/LangGraph_Know/
 venv/
 __pycache__/
 *.py[cod]
