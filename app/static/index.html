@@ -12,7 +12,8 @@
   </head>
   <body>
     <main class="app-shell">
-      <aside class="sidebar" aria-label="Assistant information">
+      <aside class="sidebar" aria-label="Conversation navigation">
+        <div class="sidebar-header">
         <a class="brand" href="/" aria-label="Aster home">
           <span class="brand-mark" aria-hidden="true">A</span>
           <span>
@@ -20,33 +21,42 @@
             <small>Customer intelligence</small>
           </span>
         </a>
-
-        <section class="sidebar-copy">
-          <p class="eyebrow">LANGGRAPH ROUTER</p>
-          <h1>One assistant, the right source.</h1>
-          <p>
-            Ask naturally. Aster classifies each request, selects a workflow,
-            and shows which business data informed the answer.
-          </p>
-        </section>
-
-        <div class="route-list" aria-label="Available routes">
-          <div><span class="route-dot general"></span>General assistance</div>
-          <div><span class="route-dot product"></span>Product catalog</div>
-          <div><span class="route-dot return"></span>Return policy — staged</div>
+          <button id="new-conversation" class="new-conversation" type="button">
+            <span aria-hidden="true">＋</span>
+            New conversation
+          </button>
         </div>
 
-        <footer>
-          <span class="status-dot"></span>
-          Local development environment
-        </footer>
+        <section class="conversation-panel" aria-labelledby="conversation-list-title">
+          <div class="panel-heading">
+            <p id="conversation-list-title" class="eyebrow">CONVERSATIONS</p>
+            <button id="refresh-conversations" type="button" aria-label="Refresh conversations" title="Refresh conversations">↻</button>
+          </div>
+          <div id="conversation-list" class="conversation-list">
+            <p class="conversation-list-status">Loading conversations…</p>
+          </div>
+        </section>
+
+        <div class="sidebar-footer">
+          <div class="route-list" aria-label="Available routes">
+            <div><span class="route-dot general"></span>General assistance</div>
+            <div><span class="route-dot product"></span>Product catalog</div>
+            <div><span class="route-dot return"></span>Return policy RAG</div>
+            <div><span class="route-dot knowledge"></span>Knowledge Base RAG</div>
+            <div><span class="route-dot vision"></span>Image understanding</div>
+          </div>
+          <footer>
+            <span class="status-dot"></span>
+            PostgreSQL conversation memory
+          </footer>
+        </div>
       </aside>
 
       <section class="workspace" aria-label="Chat with Aster">
         <header class="topbar">
           <div>
             <p class="eyebrow">ASSISTANT</p>
-            <h2>How can I help?</h2>
+            <h2 id="current-conversation-title">New conversation</h2>
           </div>
           <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">API docs</a>
         </header>

@@ -6,9 +6,16 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from app.core.config import Settings, get_settings
+from app.db.session import async_session_factory
 from app.services.base import LLMService, ServiceType
 from app.services.assistant_service import AssistantGraphService
 from app.services.errors import LLMConfigurationError
+from app.services.embedding_service import (
+    EmbeddingService,
+    OllamaEmbeddingService,
+    OpenAIEmbeddingService,
+)
+from app.services.knowledge_service import KnowledgeIngestionService, KnowledgeRetriever
 from app.services.langchain_service import LangChainChatService
 from app.services.ollama_service import OllamaChatService
 from app.services.openai_service import OpenAIResponsesService
@@ -119,6 +126,7 @@ class LLMServiceFactory:
             model=model,
         )
         catalog = ProductCatalog(self.settings.business_data_dir)
+        knowledge_retriever = self.create_knowledge_retriever()
         try:
             vision_service = self.create_vision_service()
         except LLMConfigurationError:
@@ -128,8 +136,58 @@ class LLMServiceFactory:
             model_client=answer_client,
             product_catalog=catalog,
             vision_service=vision_service,
+            knowledge_retriever=knowledge_retriever,
             provider=provider,
             model=model,
+        )
+
+    def create_embedding_service(self) -> EmbeddingService:
+        """Create the configured fixed-dimension RAG embedding adapter."""
+        dimensions = self.settings.rag_embedding_dimensions
+        if dimensions != 768:
+            raise LLMConfigurationError(
+                "RAG_EMBEDDING_DIMENSIONS must be 768 for the current pgvector schema."
+            )
+
+        if self.settings.rag_embedding_provider == "ollama":
+            return OllamaEmbeddingService(
+                base_url=self.settings.ollama_base_url,
+                model=self.settings.ollama_embedding_model,
+                dimensions=dimensions,
+                timeout_seconds=self.settings.ollama_timeout_seconds,
+            )
+
+        if self.settings.openai_api_key is None:
+            raise LLMConfigurationError(
+                "OPENAI_API_KEY is required when RAG_EMBEDDING_PROVIDER=openai."
+            )
+        client = AsyncOpenAI(
+            api_key=self.settings.openai_api_key.get_secret_value(),
+            base_url=self.settings.openai_base_url,
+            timeout=self.settings.openai_timeout_seconds,
+        )
+        return OpenAIEmbeddingService(
+            client=client,
+            model=self.settings.openai_embedding_model,
+            dimensions=dimensions,
+        )
+
+    def create_knowledge_retriever(self) -> KnowledgeRetriever:
+        """Create the public Knowledge Base pgvector retriever."""
+        return KnowledgeRetriever(
+            session_factory=async_session_factory,
+            embedding_service=self.create_embedding_service(),
+            default_k=self.settings.rag_retrieval_k,
+        )
+
+    def create_knowledge_ingestion_service(self) -> KnowledgeIngestionService:
+        """Create the idempotent local Knowledge Base ingestion pipeline."""
+        return KnowledgeIngestionService(
+            session_factory=async_session_factory,
+            embedding_service=self.create_embedding_service(),
+            knowledge_base_dir=self.settings.knowledge_base_dir,
+            chunk_size=self.settings.rag_chunk_size,
+            chunk_overlap=self.settings.rag_chunk_overlap,
         )
 
     def create_vision_service(self) -> OpenAIVisionService:

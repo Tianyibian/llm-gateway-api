@@ -8,6 +8,7 @@ import pytest
 
 from app.models.schemas import QueryClassification, QueryRoute
 from app.services.assistant_service import AssistantGraphService
+from app.services.knowledge_service import RetrievedKnowledge
 from app.services.product_catalog import ProductCatalog, ProductRecord
 
 
@@ -34,6 +35,24 @@ class FakeVisionService:
         assert mime_type == "image/png"
         yield "The number "
         yield "is 615."
+
+
+class FakeKnowledgeRetriever:
+    async def retrieve(self, query: str) -> list[RetrievedKnowledge]:
+        assert query == "Can I return this item?"
+        return [
+            RetrievedKnowledge(
+                content="Eligible products can be returned within 30 days.",
+                title="Return Policy",
+                source_path="Knowledge Base/Return Policy.pdf#page=1",
+                source_file="Knowledge Base/Return Policy.pdf",
+                source_type="pdf",
+                category="Policy",
+                page=1,
+                score=0.91,
+                chunk_index=0,
+            )
+        ]
 
 
 def test_product_catalog_finds_and_enriches_matching_rows() -> None:
@@ -136,15 +155,18 @@ def test_product_graph_emits_grounding_records() -> None:
     asyncio.run(scenario())
 
 
-def test_return_graph_is_explicitly_not_connected() -> None:
+def test_return_graph_retrieves_knowledge_and_emits_citations() -> None:
     fake_module = pytest.importorskip("langchain_core.language_models.fake_chat_models")
 
     async def scenario() -> None:
-        model = fake_module.FakeListChatModel(responses=[])
+        model = fake_module.FakeListChatModel(
+            responses=["Eligible products can be returned within 30 days [1]."]
+        )
         service = AssistantGraphService.from_model(
             classifier=FakeClassifier(QueryRoute.RETURN_SEARCH),
             model_client=model,
             product_catalog=ProductCatalog(PROJECT_ROOT / "Business_data"),
+            knowledge_retriever=FakeKnowledgeRetriever(),  # type: ignore[arg-type]
             provider="fake",
             model="fake-model",
         )
@@ -155,7 +177,10 @@ def test_return_graph_is_explicitly_not_connected() -> None:
         )
 
         assert events[0][1]["route"] == "return_search"
-        assert "not connected yet" in answer
+        source_event = next(payload for name, payload in events if name == "sources")
+        assert source_event["documents"][0]["title"] == "Return Policy"
+        assert source_event["documents"][0]["page"] == 1
+        assert answer == "Eligible products can be returned within 30 days [1]."
 
     asyncio.run(scenario())
 

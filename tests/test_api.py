@@ -11,6 +11,7 @@ import pytest
 from app.api.conversation_routes import get_conversation_service
 from app.api.routes import (
     get_assistant_service,
+    get_knowledge_retriever,
     get_llm_factory,
     get_query_classifier,
 )
@@ -19,6 +20,7 @@ from app.main import app
 from app.models.schemas import Message, QueryClassification, QueryRoute
 from app.services.base import LLMService, ServiceType
 from app.services.conversation_service import ConversationService
+from app.services.knowledge_service import KnowledgeStatus
 
 
 class FakeService(LLMService):
@@ -135,6 +137,17 @@ class FakeAssistantService:
         yield "delta", {"content": f"Catalog answer for: {query}"}
 
 
+class FakeKnowledgeRetriever:
+    async def status(self) -> KnowledgeStatus:
+        return KnowledgeStatus(
+            documents=626,
+            chunks=1581,
+            public_documents=623,
+            embedding_provider="ollama",
+            embedding_model="embeddinggemma",
+        )
+
+
 @pytest.fixture
 def api_client(tmp_path):
     engine, session_factory = build_database(
@@ -177,7 +190,26 @@ def test_root_serves_assistant_frontend(api_client) -> None:
     response = client.get("/")
     assert response.status_code == 200
     assert "Aster Customer Assistant" in response.text
+    assert 'id="new-conversation"' in response.text
+    assert 'id="conversation-list"' in response.text
     assert "/static/app.js" in response.text
+
+
+def test_knowledge_status_reports_index_readiness(api_client) -> None:
+    client, _ = api_client
+    app.dependency_overrides[get_knowledge_retriever] = FakeKnowledgeRetriever
+
+    response = client.get("/api/knowledge/status")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "documents": 626,
+        "chunks": 1581,
+        "public_documents": 623,
+        "embedding_provider": "ollama",
+        "embedding_model": "embeddinggemma",
+        "ready": True,
+    }
 
 
 def test_chat_creates_conversation_and_streams_sse(api_client) -> None:

@@ -21,6 +21,7 @@ from app.services.conversation_service import ConversationService
 from app.services.errors import ConversationNotFoundError, LLMConfigurationError
 from app.services.factory import LLMServiceFactory
 from app.services.query_classifier import QueryClassifier
+from app.services.knowledge_service import KnowledgeRetriever
 from app.services.streaming import encode_sse
 from app.services.vision_service import OpenAIVisionService
 from app.core.config import Settings, get_settings
@@ -50,6 +51,18 @@ def get_assistant_service(
 ) -> AssistantGraphService:
     try:
         return factory.create_assistant()
+    except LLMConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+
+def get_knowledge_retriever(
+    factory: LLMServiceFactory = Depends(get_llm_factory),
+) -> KnowledgeRetriever:
+    try:
+        return factory.create_knowledge_retriever()
     except LLMConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -420,3 +433,28 @@ async def assistant(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.get(
+    "/knowledge/status",
+    summary="Show the current Knowledge Base RAG index status",
+)
+async def knowledge_status(
+    retriever: KnowledgeRetriever = Depends(get_knowledge_retriever),
+) -> dict[str, object]:
+    try:
+        status_result = await retriever.status()
+    except Exception as exc:
+        logger.exception("Knowledge Base status failed")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Knowledge Base schema is unavailable. Run Alembic migrations.",
+        ) from exc
+    return {
+        "documents": status_result.documents,
+        "chunks": status_result.chunks,
+        "public_documents": status_result.public_documents,
+        "embedding_provider": status_result.embedding_provider,
+        "embedding_model": status_result.embedding_model,
+        "ready": status_result.chunks > 0,
+    }

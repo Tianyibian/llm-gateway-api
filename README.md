@@ -27,6 +27,7 @@ of replaying history on every request.
 | **Provider-agnostic** | `LLMServiceFactory` returns an adapter chosen from configuration. Swapping OpenAI ⇄ Ollama requires no client or endpoint changes. |
 | **Optional orchestration** | Use the direct provider adapters by default, or enable LangChain through configuration without changing routes, persistence, or clients. |
 | **LangGraph assistant** | Classifies each query, follows a conditional graph branch, and streams a grounded answer with visible route and source metadata. |
+| **Knowledge Base RAG** | Loads CSV, HTML, PDF, and DOCX sources, creates local or OpenAI embeddings, retrieves with pgvector HNSW search, and returns citations. |
 | **Image understanding** | Validates an uploaded image locally, then streams analysis from OpenAI vision without persisting the upload. |
 | **Stateful conversations** | Server-side history: send only the new user turn and the service prepends stored context. |
 | **Durable & transactional** | Async SQLAlchemy + PostgreSQL persistence; a turn is committed atomically, and a conversation auto-created by a failed first stream is cleaned up rather than left orphaned. |
@@ -81,8 +82,9 @@ adapter patterns.
 |---|---|---|
 | `POST` | `/api/chat` | Stateful multi-turn conversation. Returns a `conversation_id`; reuse it and send only the new turn. |
 | `POST` | `/api/reason` | Stateless reasoning-oriented response — a reasoned final answer plus a concise explanation (not hidden chain of thought). |
-| `POST` | `/api/classify` | Structured query routing: `general_search`, `return_search`, or `product_search`. |
+| `POST` | `/api/classify` | Structured routing: `general_search`, `product_search`, `return_search`, or `knowledge_search`. |
 | `POST` | `/api/assistant` | Stateful multimodal LangGraph assistant. Accepts text JSON or multipart image input and persists completed turns. |
+| `GET` | `/api/knowledge/status` | Show compatible indexed document/chunk counts and embedding configuration. |
 
 ### Conversation management
 
@@ -120,6 +122,8 @@ python -m pip install -r requirements-langchain.txt
 cp .env.example .env          # then set LLM_PROVIDER (and a key, if using OpenAI)
 docker compose up -d postgres  # start PostgreSQL 17 on localhost:5432
 alembic upgrade head          # create / update the schema
+ollama pull embeddinggemma    # local 768-dimensional embeddings
+python -m app.cli.ingest_knowledge
 uvicorn app.main:app --reload
 ```
 
@@ -150,6 +154,11 @@ curl -N -X POST http://127.0.0.1:8000/api/chat \
 | `DATABASE_POOL_TIMEOUT_SECONDS` | Maximum wait for an available pooled connection |
 | `DATABASE_POOL_RECYCLE_SECONDS` | Maximum lifetime before a pooled connection is replaced |
 | `BUSINESS_DATA_DIR` | Directory containing `Products.csv`, `Categories.csv`, and `Suppliers.csv` |
+| `KNOWLEDGE_BASE_DIR` | Directory containing supported RAG source files |
+| `RAG_EMBEDDING_PROVIDER` | `ollama` (local) or `openai`; independent of the answer-model provider |
+| `OLLAMA_EMBEDDING_MODEL` / `OPENAI_EMBEDDING_MODEL` | Embedding model selected by the RAG provider |
+| `RAG_CHUNK_SIZE` / `RAG_CHUNK_OVERLAP` | Character-based chunking settings |
+| `RAG_RETRIEVAL_K` | Maximum number of chunks supplied to the grounded answer prompt |
 | `OPENAI_VISION_MODEL` | OpenAI model used only for explicit image-analysis requests |
 | `OPENAI_VISION_DETAIL` | `low`, `high`, `original`, or `auto`; defaults to `high` |
 | `VISION_MAX_IMAGE_BYTES` | Local upload limit; defaults to 10 MB |
@@ -185,11 +194,10 @@ LLM_PROVIDER=ollama
 Use `LLM_PROVIDER=openai` instead to run the same adapter through OpenAI. Set
 `LLM_ORCHESTRATOR=native` to return to the direct SDK/HTTP implementations.
 
-The `/api/classify` endpoint always uses the optional LangChain runtime because
+The `/api/classify` endpoint always uses the LangChain runtime because
 it combines `ChatPromptTemplate` with the provider model's structured-output
 interface. Classification completes before routing and therefore returns one
-validated JSON object rather than an SSE stream. Route-specific search is
-intentionally not executed yet.
+validated JSON object rather than an SSE stream.
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/classify \
@@ -209,7 +217,7 @@ START -> detect_modality
                         |
                         +-> general_answer ---------------------> END
                         +-> search_products -> product_answer -> END
-                        +-> return_not_connected --------------> END
+                        +-> retrieve_knowledge -> knowledge_answer -> END
 ```
 
 The graph has separate input, output, and overall state schemas. Every node
@@ -231,6 +239,37 @@ documents, while preserving relational filters and source/version metadata.
 Policies belong in a versioned RAG knowledge pipeline with citations. A hybrid
 router can therefore send exact business facts to SQL/service APIs and
 unstructured policy questions to retrieval.
+
+### Knowledge Base RAG
+
+The ingestion command loads each FAQ row, HTML help article, non-empty PDF page,
+and DOCX document as a versioned source unit. It normalizes text, creates
+overlapping chunks, generates 768-dimensional embeddings, and stores them in
+PostgreSQL with a pgvector HNSW cosine index. Checksums make ingestion
+idempotent: unchanged sources are skipped, changed sources are replaced, and
+removed sources are deleted.
+
+```bash
+docker compose up -d postgres
+alembic upgrade head
+ollama pull embeddinggemma
+python -m app.cli.ingest_knowledge
+curl http://127.0.0.1:8000/api/knowledge/status
+```
+
+Set `RAG_EMBEDDING_PROVIDER=openai` to use `text-embedding-3-small` instead.
+The OpenAI key stays server-side; the local Ollama default requires no key or
+embedding API credits. Run ingestion again after changing the embedding model
+or provider. Retrieval refuses to mix vectors from a different configured
+embedding space.
+
+`return_search` and `knowledge_search` share the retrieval branch. Only
+`visibility=public` documents are eligible for assistant retrieval. Internal
+support DOCX files are indexed with `visibility=internal` as preparation for
+future role-based access, but the public assistant's SQL filter cannot return
+them. Each SSE `sources` event includes title, file, type, category, PDF page,
+chunk index, and similarity score; the answer prompt cites those excerpts as
+`[1]`, `[2]`, and so on.
 
 ### Image analysis
 
@@ -264,7 +303,8 @@ them with managed secrets in any shared or deployed environment.
 
 ## PostgreSQL database
 
-The application uses PostgreSQL 17 through SQLAlchemy's async `asyncpg` driver.
+The application uses PostgreSQL 17 with pgvector through SQLAlchemy's async
+`asyncpg` driver.
 The local service is defined in `compose.yaml`; its data survives container
 restarts in the `postgres_data` Docker volume.
 
@@ -314,7 +354,8 @@ The `pytest` suite runs against temporary SQLite databases with the provider
 replaced by a deterministic fake, covering routing, request validation, factory
 selection, SSE formatting, ownership rules, atomic turn persistence,
 failed-first-turn cleanup, cascading deletes, history ordering, and Alembic
-upgrade/downgrade. It consumes no API credits and needs no local model.
+upgrade/downgrade, multi-format knowledge loading, chunking, embeddings, and
+grounded citation routing. It consumes no API credits and needs no local model.
 
 The Postman collection (`postman/`) is deliberately **not** mocked: it drives a
 running Uvicorn process against real providers and asserts status, SSE content
@@ -333,7 +374,7 @@ app/
 ├── api/routes.py                 # LLM endpoints + SSE
 ├── api/conversation_routes.py    # conversation CRUD
 ├── core/config.py                # environment configuration
-├── db/models.py                  # Conversation / Message tables
+├── db/models.py                  # conversation, message, vector tables
 ├── db/session.py                 # async engine & session factory
 ├── models/schemas.py             # Pydantic request & response schemas
 ├── services/base.py              # abstract service + service types
@@ -344,8 +385,12 @@ app/
 ├── services/query_classifier.py # prompt + structured-output routing
 ├── services/assistant_service.py # StateGraph + conditional branches
 ├── services/product_catalog.py   # local CSV search adapter
+├── services/knowledge_loader.py  # CSV / HTML / PDF / DOCX loaders
+├── services/embedding_service.py # Ollama / OpenAI embedding adapters
+├── services/knowledge_service.py # ingestion + pgvector retrieval
 ├── services/vision_service.py   # OpenAI Responses image analysis
 ├── services/conversation_service.py
+├── cli/ingest_knowledge.py       # idempotent indexing command
 ├── static/                       # local assistant web interface
 └── main.py
 compose.yaml                      # local PostgreSQL 17 service

@@ -7,6 +7,10 @@ const attachmentPreview = document.querySelector("#attachment-preview");
 const attachmentImage = document.querySelector("#attachment-image");
 const attachmentName = document.querySelector("#attachment-name");
 const removeAttachmentButton = document.querySelector("#remove-attachment");
+const conversationList = document.querySelector("#conversation-list");
+const newConversationButton = document.querySelector("#new-conversation");
+const refreshConversationsButton = document.querySelector("#refresh-conversations");
+const currentConversationTitle = document.querySelector("#current-conversation-title");
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const SUPPORTED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 
@@ -16,12 +20,14 @@ const USER_ID_KEY = "aster_user_id";
 const CONVERSATION_ID_KEY = "aster_conversation_id";
 const userId = localStorage.getItem(USER_ID_KEY) ?? crypto.randomUUID();
 let conversationId = localStorage.getItem(CONVERSATION_ID_KEY);
+let conversationRecords = [];
 localStorage.setItem(USER_ID_KEY, userId);
 
 const routeLabels = {
   general_search: "General assistance",
   product_search: "Product catalog",
   return_search: "Return policy",
+  knowledge_search: "Knowledge Base",
   vision_analysis: "Image analysis",
 };
 
@@ -47,7 +53,7 @@ function addUserMessage(text, imageFile = null) {
   conversation.append(article);
 }
 
-function addAssistantMessage() {
+function addAssistantMessage(content = null) {
   const article = document.createElement("article");
   article.className = "message assistant-message";
 
@@ -65,8 +71,8 @@ function addAssistantMessage() {
   route.className = "route-badge";
   route.hidden = true;
   const answer = document.createElement("p");
-  answer.className = "thinking";
-  answer.textContent = "Routing your question";
+  answer.className = content === null ? "thinking" : "";
+  answer.textContent = content ?? "Routing your question";
   const sources = document.createElement("div");
   sources.className = "source-panel";
 
@@ -74,6 +80,165 @@ function addAssistantMessage() {
   article.append(avatar, body);
   conversation.append(article);
   return { answer, route, sources };
+}
+
+function renderWelcome() {
+  conversation.replaceChildren();
+  addAssistantMessage(
+    "I can answer general questions, search product data, remember this conversation, and analyze an attached image."
+  );
+
+  const suggestions = document.createElement("section");
+  suggestions.className = "suggestions";
+  suggestions.setAttribute("aria-label", "Suggested questions");
+  [
+    ["What can you help me with?", "What can you help me with?"],
+    ["Show me Philips Hue smart locks and their inventory.", "Find Philips Hue smart locks"],
+    ["Can I return an installed smart lock?", "Ask about a return"],
+  ].forEach(([prompt, label]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.prompt = prompt;
+    button.textContent = label;
+    suggestions.append(button);
+  });
+  conversation.append(suggestions);
+}
+
+function startNewConversation() {
+  conversationId = null;
+  localStorage.removeItem(CONVERSATION_ID_KEY);
+  currentConversationTitle.textContent = "New conversation";
+  renderConversationList(conversationRecords);
+  renderWelcome();
+  input.focus();
+}
+
+function formatConversationDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function renderConversationList(items) {
+  conversationList.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.className = "conversation-list-status";
+    empty.textContent = "No saved conversations yet.";
+    conversationList.append(empty);
+    return;
+  }
+
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = `conversation-item${item.id === conversationId ? " active" : ""}`;
+
+    const select = document.createElement("button");
+    select.type = "button";
+    select.className = "conversation-select";
+    select.dataset.conversationAction = "select";
+    select.dataset.conversationId = item.id;
+    const title = document.createElement("strong");
+    title.textContent = item.title || "Untitled conversation";
+    const date = document.createElement("span");
+    date.textContent = formatConversationDate(item.updated_at);
+    select.append(title, date);
+
+    const actions = document.createElement("div");
+    actions.className = "conversation-actions";
+    const rename = document.createElement("button");
+    rename.type = "button";
+    rename.dataset.conversationAction = "rename";
+    rename.dataset.conversationId = item.id;
+    rename.setAttribute("aria-label", `Rename ${item.title || "conversation"}`);
+    rename.title = "Rename";
+    rename.textContent = "✎";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.dataset.conversationAction = "delete";
+    remove.dataset.conversationId = item.id;
+    remove.setAttribute("aria-label", `Delete ${item.title || "conversation"}`);
+    remove.title = "Delete";
+    remove.textContent = "×";
+    actions.append(rename, remove);
+    row.append(select, actions);
+    conversationList.append(row);
+  });
+}
+
+async function loadConversation(id) {
+  const item = conversationRecords.find((record) => record.id === id);
+  const response = await fetch(
+    `/api/conversations/${encodeURIComponent(id)}/messages?user_id=${encodeURIComponent(userId)}`
+  );
+  if (!response.ok) throw new Error(`Could not load conversation (${response.status})`);
+  const messages = await response.json();
+
+  conversationId = id;
+  localStorage.setItem(CONVERSATION_ID_KEY, id);
+  currentConversationTitle.textContent = item?.title || "Untitled conversation";
+  conversation.replaceChildren();
+  messages.forEach((message) => {
+    if (message.role === "user") addUserMessage(message.content);
+    if (message.role === "assistant") addAssistantMessage(message.content);
+  });
+  if (!messages.length) renderWelcome();
+  renderConversationList(conversationRecords);
+  scrollToLatest();
+  input.focus();
+}
+
+async function loadConversations({ restoreActive = false } = {}) {
+  conversationList.innerHTML = '<p class="conversation-list-status">Loading conversations…</p>';
+  try {
+    const response = await fetch(`/api/users/${encodeURIComponent(userId)}/conversations`);
+    if (!response.ok) throw new Error(`Could not load conversations (${response.status})`);
+    conversationRecords = await response.json();
+    renderConversationList(conversationRecords);
+
+    if (restoreActive && conversationId) {
+      if (conversationRecords.some((item) => item.id === conversationId)) {
+        await loadConversation(conversationId);
+      } else {
+        startNewConversation();
+      }
+    }
+  } catch (error) {
+    conversationList.innerHTML = '<p class="conversation-list-status">Conversation history is unavailable.</p>';
+    console.error(error);
+  }
+}
+
+async function renameConversation(id) {
+  const item = conversationRecords.find((record) => record.id === id);
+  const title = window.prompt("Conversation title", item?.title || "");
+  if (!title?.trim()) return;
+  const response = await fetch(`/api/conversations/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, title: title.trim() }),
+  });
+  if (!response.ok) throw new Error(`Could not rename conversation (${response.status})`);
+  if (id === conversationId) currentConversationTitle.textContent = title.trim();
+  await loadConversations();
+}
+
+async function deleteConversation(id) {
+  const item = conversationRecords.find((record) => record.id === id);
+  if (!window.confirm(`Delete “${item?.title || "this conversation"}” and all of its messages?`)) return;
+  const response = await fetch(
+    `/api/conversations/${encodeURIComponent(id)}?user_id=${encodeURIComponent(userId)}`,
+    { method: "DELETE" }
+  );
+  if (!response.ok) throw new Error(`Could not delete conversation (${response.status})`);
+  if (id === conversationId) startNewConversation();
+  await loadConversations();
 }
 
 function showProducts(container, payload) {
@@ -101,6 +266,42 @@ function showProducts(container, payload) {
   });
 }
 
+function showKnowledgeSources(container, payload) {
+  container.replaceChildren();
+  const documents = payload.documents ?? [];
+  if (!documents.length) return;
+
+  const title = document.createElement("div");
+  title.className = "source-title";
+  title.textContent = "Knowledge Base sources";
+  container.append(title);
+
+  const uniqueSources = new Map();
+  documents.forEach((source) => {
+    const key = `${source.source_path}:${source.chunk_index}`;
+    if (!uniqueSources.has(key)) uniqueSources.set(key, source);
+  });
+  [...uniqueSources.values()].forEach((source, index) => {
+    const card = document.createElement("div");
+    card.className = "knowledge-source";
+    const marker = document.createElement("strong");
+    marker.textContent = `[${index + 1}]`;
+    const details = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = source.title;
+    const meta = document.createElement("span");
+    const page = source.page ? ` · page ${source.page}` : "";
+    const relevance = Number.isFinite(Number(source.score))
+      ? ` · ${Math.round(Number(source.score) * 100)}% match`
+      : "";
+    meta.textContent = `${source.category ?? source.source_type}${page}${relevance}`;
+    details.append(name, meta);
+    card.append(marker, details);
+    card.title = source.source_file;
+    container.append(card);
+  });
+}
+
 function handleEvent(eventName, payload, message) {
   if (eventName === "metadata" && payload.conversation_id) {
     conversationId = payload.conversation_id;
@@ -114,7 +315,8 @@ function handleEvent(eventName, payload, message) {
     message.answer.textContent = payload.route === "vision_analysis" ? "Reading the image" : "";
     message.answer.classList.remove("thinking");
   } else if (eventName === "sources") {
-    showProducts(message.sources, payload);
+    if (payload.documents?.length) showKnowledgeSources(message.sources, payload);
+    else showProducts(message.sources, payload);
   } else if (eventName === "delta") {
     message.answer.classList.remove("thinking");
     if (["Routing your question", "Reading the image"].includes(message.answer.textContent)) {
@@ -191,6 +393,8 @@ async function sendQuery(query) {
   const imageFile = selectedImage;
   const text = query.trim() || (imageFile ? "What is in this image?" : "");
   if (!text || sendButton.disabled) return;
+  const isNewConversation = !conversationId;
+  if (isNewConversation) currentConversationTitle.textContent = text.slice(0, 80);
 
   document.querySelector(".suggestions")?.remove();
   addUserMessage(text, imageFile);
@@ -230,6 +434,7 @@ async function sendQuery(query) {
       throw new Error(detail || `Request failed with ${response.status}`);
     }
     await readEventStream(response, message);
+    await loadConversations();
   } catch (error) {
     message.answer.classList.remove("thinking");
     message.answer.classList.add("error-text");
@@ -259,9 +464,28 @@ input.addEventListener("input", () => {
   input.style.height = `${Math.min(input.scrollHeight, 150)}px`;
 });
 
-document.querySelectorAll("[data-prompt]").forEach((button) => {
-  button.addEventListener("click", () => sendQuery(button.dataset.prompt ?? ""));
+conversation.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-prompt]");
+  if (button) sendQuery(button.dataset.prompt ?? "");
 });
+
+conversationList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-conversation-action]");
+  if (!button) return;
+  const { conversationAction: action, conversationId: id } = button.dataset;
+  if (!id) return;
+  try {
+    if (action === "select") await loadConversation(id);
+    if (action === "rename") await renameConversation(id);
+    if (action === "delete") await deleteConversation(id);
+  } catch (error) {
+    window.alert("The conversation action failed. Check that the API and database are running.");
+    console.error(error);
+  }
+});
+
+newConversationButton.addEventListener("click", startNewConversation);
+refreshConversationsButton.addEventListener("click", () => loadConversations());
 
 imageInput.addEventListener("change", () => {
   const [file] = imageInput.files ?? [];
@@ -272,3 +496,5 @@ removeAttachmentButton.addEventListener("click", () => {
   clearAttachment();
   input.placeholder = "Ask about products, inventory, or anything else…";
 });
+
+loadConversations({ restoreActive: true });

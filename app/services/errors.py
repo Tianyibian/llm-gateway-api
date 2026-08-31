@@ -8,3 +8,11 @@ class ConversationNotFoundError(LookupError):
 
 class InvalidImageError(ValueError):
     """Raised when an uploaded image is unsupported or cannot be decoded."""
+
+
+class EmbeddingServiceError(RuntimeError):
+    """Raised when an embedding provider fails or returns invalid vectors."""
+
+
+class KnowledgeBaseNotReadyError(RuntimeError):
+    """Raised when retrieval is attempted before knowledge ingestion."""

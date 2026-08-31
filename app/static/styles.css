@@ -51,6 +51,11 @@ a {
   background: var(--forest);
 }
 
+.sidebar-header {
+  display: grid;
+  gap: 24px;
+}
+
 .brand {
   display: inline-flex;
   gap: 12px;
@@ -87,8 +92,144 @@ a {
   font-size: 12px;
 }
 
-.sidebar-copy {
-  margin: auto 0;
+.new-conversation {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid rgb(184 242 212 / 35%);
+  border-radius: 12px;
+  color: var(--forest);
+  background: var(--mint);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.new-conversation:hover {
+  background: #ccf8df;
+}
+
+.conversation-panel {
+  min-height: 0;
+  margin: 34px 0 20px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.panel-heading .eyebrow {
+  margin: 0;
+}
+
+.panel-heading button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  color: #bfd0ca;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.panel-heading button:hover {
+  color: white;
+  background: rgb(255 255 255 / 8%);
+}
+
+.conversation-list {
+  display: grid;
+  gap: 6px;
+  max-height: calc(100vh - 390px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.conversation-list-status {
+  margin: 10px 0;
+  color: #91aaa1;
+  font-size: 12px;
+}
+
+.conversation-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 11px;
+}
+
+.conversation-item:hover,
+.conversation-item.active {
+  border-color: rgb(184 242 212 / 18%);
+  background: rgb(255 255 255 / 7%);
+}
+
+.conversation-select {
+  overflow: hidden;
+  padding: 11px 6px 11px 12px;
+  border: 0;
+  color: #d7e5df;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.conversation-select strong,
+.conversation-select span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-select strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.conversation-select span {
+  margin-top: 3px;
+  color: #91aaa1;
+  font-size: 10px;
+}
+
+.conversation-actions {
+  display: flex;
+  padding-right: 6px;
+  opacity: 0;
+}
+
+.conversation-item:hover .conversation-actions,
+.conversation-item.active .conversation-actions,
+.conversation-actions:focus-within {
+  opacity: 1;
+}
+
+.conversation-actions button {
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: #a9c2b9;
+  background: transparent;
+  cursor: pointer;
+}
+
+.conversation-actions button:hover {
+  color: white;
+  background: rgb(255 255 255 / 9%);
+}
+
+.sidebar-footer {
+  margin-top: auto;
 }
 
 .eyebrow {
@@ -148,6 +289,14 @@ a {
 
 .route-dot.return {
   background: #f5c56b;
+}
+
+.route-dot.vision {
+  background: #d7a7ff;
+}
+
+.route-dot.knowledge {
+  background: #5ed6c0;
 }
 
 .sidebar footer {
@@ -291,6 +440,37 @@ a {
 .product-card span {
   color: var(--muted);
   font-size: 12px;
+}
+
+.knowledge-source {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.knowledge-source > strong {
+  color: var(--mint-strong);
+  font-size: 12px;
+}
+
+.knowledge-source div strong,
+.knowledge-source div span {
+  display: block;
+}
+
+.knowledge-source div strong {
+  font-size: 12px;
+}
+
+.knowledge-source div span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .suggestions {
@@ -480,7 +660,25 @@ a {
     padding: 20px 22px;
   }
 
-  .sidebar-copy,
+  .sidebar-header {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .new-conversation {
+    width: auto;
+  }
+
+  .conversation-panel {
+    margin: 20px 0 0;
+  }
+
+  .conversation-list {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    max-height: 135px;
+  }
+
+  .sidebar-footer,
   .route-list,
   .sidebar footer {
     display: none;

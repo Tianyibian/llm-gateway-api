@@ -20,8 +20,11 @@ Select exactly one route for the user's query:
 - product_search: The answer requires product catalog information, including
   specifications, features, compatibility, price, availability, category, or
   comparison between products.
+- knowledge_search: The answer requires company help-center or support knowledge,
+  including shipping, ordering, payment, accounts, setup, troubleshooting,
+  warranty, privacy, subscriptions, product manuals, or support procedures.
 - general_search: Greetings, general conversation, or questions that do not
-  require return-policy or product-catalog information.
+  require company knowledge, return-policy, or product-catalog information.
 
 Classify only the user's intent. Do not answer the question and do not perform
 the search. Give a concise reason and a confidence score from 0.0 to 1.0.

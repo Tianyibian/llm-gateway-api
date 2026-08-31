@@ -4,6 +4,7 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -19,6 +20,20 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def compare_column_types(
+    migration_context,
+    inspected_column,
+    metadata_column,
+    inspected_type,
+    metadata_type,
+):
+    """Ignore SQLite's lossy reflection of pgvector's portable test type."""
+    del inspected_column, metadata_column, inspected_type
+    if migration_context.dialect.name == "sqlite" and isinstance(metadata_type, Vector):
+        return False
+    return None
+
+
 def get_database_url() -> str:
     """Read the same environment-aware database URL used by the application."""
     return get_settings().database_url
@@ -32,7 +47,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True,
+        compare_type=compare_column_types,
         render_as_batch=database_url.startswith("sqlite"),
     )
 
@@ -44,7 +59,7 @@ def do_run_migrations(connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        compare_type=True,
+        compare_type=compare_column_types,
         render_as_batch=connection.dialect.name == "sqlite",
     )
 

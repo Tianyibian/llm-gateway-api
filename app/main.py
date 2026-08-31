@@ -25,7 +25,8 @@ app = FastAPI(
     version="1.0.0",
     description=(
         "A streaming LLM gateway with stateful conversations, LangGraph routing, "
-        "and grounded business-data answers through OpenAI or Ollama."
+        "pgvector Knowledge Base retrieval, and grounded answers through OpenAI "
+        "or Ollama."
     ),
     lifespan=lifespan,
 )

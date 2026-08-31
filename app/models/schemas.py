@@ -30,6 +30,7 @@ class QueryRoute(str, Enum):
     GENERAL_SEARCH = "general_search"
     RETURN_SEARCH = "return_search"
     PRODUCT_SEARCH = "product_search"
+    KNOWLEDGE_SEARCH = "knowledge_search"
 
 
 class ClassificationRequest(BaseModel):
