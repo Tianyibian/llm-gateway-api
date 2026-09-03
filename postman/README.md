@@ -1,4 +1,4 @@
-# Postman live integration test matrix
+# Smart AI Support API: Postman live integration tests
 
 This collection makes real model requests for every provider/service combination.
 It does not use the fake services from the pytest suite.
@@ -8,14 +8,14 @@ It does not use the fake services from the pytest suite.
 From the project root, open Terminal 1:
 
 ```bash
-source .venv/bin/activate
+source .venv-langchain/bin/activate
 env LLM_PROVIDER=openai uvicorn app.main:app --port 8001
 ```
 
 From the project root, open Terminal 2:
 
 ```bash
-source .venv/bin/activate
+source .venv-langchain/bin/activate
 env LLM_PROVIDER=ollama uvicorn app.main:app --port 8002
 ```
 
@@ -26,13 +26,15 @@ Keep Ollama App running. The local model is `qwen3:4b`.
 1. In Postman, click **Import**.
 2. Choose **File**.
 3. Select `postman/LLM_API.postman_collection.json`.
-4. Open the imported **LLM API - Provider Matrix** collection.
+4. Open the imported **Smart AI Support API - Live Integration** collection.
 
 The collection already contains these variables:
 
 ```text
 openai_base_url = http://127.0.0.1:8001
 ollama_base_url = http://127.0.0.1:8002
+router_base_url = http://127.0.0.1:8002
+router_user_id = postman-router-user
 conversation_base_url = http://127.0.0.1:8002
 conversation_user_id = postman-user
 conversation_id = (set automatically)
@@ -47,7 +49,7 @@ You can open each request and click **Send**, or run the complete collection:
 1. Click the collection's **...** menu.
 2. Select **Run collection**.
 3. Select the four requests under **OpenAI** and **Ollama**.
-4. Click **Run LLM API - Provider Matrix**.
+4. Click **Run Smart AI Support API - Live Integration**.
 
 Each request reaches the real provider through FastAPI and has seven automatic
 assertions:
@@ -69,7 +71,38 @@ Expected matrix:
 | Ollama Chat | `http://127.0.0.1:8002/api/chat` | `ollama` + `chat` |
 | Ollama Reason | `http://127.0.0.1:8002/api/reason` | `ollama` + `reason` |
 
-## 4. Run the stateful multi-turn flow
+## 4. Run the live router tests
+
+Open the **Router - Live Model** folder and run its five requests in order. The
+first four call `/api/classify` through the real Ollama model and verify every
+supported structured-output route:
+
+| Case | Expected route | Capability |
+| --- | --- | --- |
+| Greeting and joke | `general_search` | No company data required |
+| Product price and inventory | `product_search` | Structured catalog lookup required |
+| Return eligibility and window | `return_search` | Return-policy RAG required |
+| Password reset | `knowledge_search` | Help-center RAG required |
+
+Each classifier request asserts HTTP 200, the exact route, the complete
+`route`/`reason`/`confidence` schema, a non-empty reason, and confidence within
+the valid 0-to-1 range.
+
+The fifth request is deliberately more comprehensive. It calls
+`/api/assistant` and verifies the actual LangGraph `return_search` branch,
+pgvector document sources, an SSE answer containing at least one numbered
+citation, `[DONE]`, and no error event. These are live integration tests: they
+do not use the deterministic fake services from pytest.
+
+Before running the fifth request, build the local RAG index once:
+
+```bash
+alembic upgrade head
+ollama pull embeddinggemma
+python -m app.cli.ingest_knowledge
+```
+
+## 5. Run the stateful multi-turn flow
 
 Run the seven requests under **Stateful Conversation** in their numbered order:
 

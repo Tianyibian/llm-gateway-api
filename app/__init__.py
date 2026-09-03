@@ -1,1 +1,1 @@
-"""FastAPI package for the LLM Gateway API."""
+"""FastAPI package for the Smart AI Support API."""

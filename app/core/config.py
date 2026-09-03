@@ -14,7 +14,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "LLM Gateway API"
+    app_name: str = "Smart AI Support API"
     llm_provider: Literal["auto", "openai", "ollama"] = "auto"
     llm_orchestrator: Literal["native", "langchain"] = "native"
     database_url: str = (

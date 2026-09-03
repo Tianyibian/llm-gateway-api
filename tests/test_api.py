@@ -185,6 +185,15 @@ def test_health(api_client) -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_openapi_uses_smart_ai_support_title(api_client) -> None:
+    client, _ = api_client
+
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200
+    assert response.json()["info"]["title"] == "Smart AI Support API"
+
+
 def test_root_serves_assistant_frontend(api_client) -> None:
     client, _ = api_client
     response = client.get("/")

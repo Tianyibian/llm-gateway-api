@@ -1,11 +1,16 @@
-# LLM Gateway
+# LLM Gateway — RAG & LangGraph AI Assistant
 
-**A production-style, provider-agnostic gateway for large-language-model APIs — streaming, stateful, and persistence-backed.**
+**A production-style Generative AI backend with Retrieval-Augmented Generation
+(RAG), LangChain, LangGraph, streaming LLM APIs, and persistent multi-turn
+memory.**
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)](https://fastapi.tiangolo.com/)
+[![LangChain](https://img.shields.io/badge/LangChain-LCEL-1C3C3C)](https://www.langchain.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-agent%20workflow-1C3C3C)](https://www.langchain.com/langgraph)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-async%20ORM-d71f00)](https://www.sqlalchemy.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1)](https://www.postgresql.org/)
+[![pgvector](https://img.shields.io/badge/pgvector-HNSW-4169E1)](https://github.com/pgvector/pgvector)
 [![Alembic](https://img.shields.io/badge/Alembic-migrations-6BA81E)](https://alembic.sqlalchemy.org/)
 [![Tests](https://img.shields.io/badge/tests-pytest%20%2B%20postman-0A9EDC)](#testing)
 [![License](https://img.shields.io/badge/license-MIT-black)](LICENSE)
@@ -16,6 +21,22 @@ Server-Sent Event stream, whether the tokens come from the **OpenAI API** or a
 **self-hosted Ollama** model. Conversations are durable: every completed turn is
 written to a relational database, so a client can resume a thread by ID instead
 of replaying history on every request.
+
+## Tech stack
+
+**Generative AI:** Retrieval-Augmented Generation (RAG), LangChain, LangGraph,
+LangChain Expression Language (LCEL), prompt engineering, Pydantic structured
+output, semantic search, text embeddings, vector similarity search, grounded
+generation, source citations, OpenAI Responses API, and Ollama.
+
+**Backend and data:** Python, FastAPI, asynchronous APIs, Server-Sent Events
+(SSE), PostgreSQL 17, pgvector, HNSW indexing, async SQLAlchemy ORM, asyncpg,
+Alembic migrations, Pydantic, Docker Compose, REST APIs, and dependency
+injection.
+
+**Engineering:** Object-oriented design, Factory and Adapter patterns,
+provider-agnostic model integration, stateful multi-turn conversations,
+multimodal image understanding, pytest, Postman, and idempotent data ingestion.
 
 ---
 
