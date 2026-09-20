@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T154346Z",
+  "triggered_at": "2026-09-18T15:43:46.365Z",
+  "started_at": "2026-09-18T16:00:27Z",
+  "completed_at": "2026-09-18T22:25:57Z",
+  "clock_observations": [
+    {
+      "utc": "2026-09-18T16:00:27Z",
+      "new_york": "2026-09-18 12:00:27 EDT"
+    },
+    {
+      "utc": "2026-09-18T18:57:49Z",
+      "new_york": "2026-09-18 14:57:49 EDT"
+    },
+    {
+      "utc": "2026-09-18T22:25:57Z",
+      "new_york": "2026-09-18 18:25:57 EDT"
+    }
+  ],
+  "calendar": {
+    "date": "2026-09-18",
+    "trading_day": true,
+    "early_close": false,
+    "regular_open": "09:30",
+    "regular_close": "16:00",
+    "source_id": "nyse-calendar",
+    "checked_at": "2026-09-18T16:00:27Z",
+    "source_url": "https://www.nyse.com/trade/hours-calendars"
+  },
+  "previous_success_at": "2026-09-18T13:37:30Z",
+  "baseline_file": "/Users/tianyi/找工作/handson/quant_tqqq_backtest/output/fundamental_candidates_2026-09-17.md",
+  "quote_response": {
+    "data": {
+      "results": [
+        {
+          "quote": {
+            "symbol": "ADBE",
+            "last_trade_price": "250.100000",
+            "venue_last_trade_time": "2026-09-18T18:57:49.208336469Z",
+            "last_non_reg_trade_price": null,
+            "venue_last_non_reg_trade_time": null,
+            "adjusted_previous_close": "252.670000",
+            "previous_close": "252.670000",
+            "previous_close_date": "2026-09-17",
+            "bid_price": "250.060000",
+            "venue_bid_time": "2026-09-18T18:57:48.424614853Z",
+            "ask_price": "250.140000",
+            "venue_ask_time": "2026-09-18T18:57:48.424614853Z",
+            "has_traded": true,
+            "state": "active"
+          },
+          "close": {
+            "symbol": "ADBE",
+            "date": "2026-09-17",
+            "price": "252.67",
+            "interpolated": false,
+            "source": "sip-list-exchange-close"
+          }
+        },
+        {
+          "quote": {
+            "symbol": "MELI",
+            "last_trade_price": "1801.740000",
+            "venue_last_trade_time": "2026-09-18T18:57:49.224738928Z",
+            "last_non_reg_trade_price": null,
+            "venue_last_non_reg_trade_time": null,
+            "adjusted_previous_close": "1825.210000",
+            "previous_close": "1825.210000",
+            "previous_close_date": "2026-09-17",
+            "bid_price": "1800.800000",
+            "venue_bid_time": "2026-09-18T18:57:40.551050976Z",
+            "ask_price": "1801.740000",
+            "venue_ask_time": "2026-09-18T18:57:40.551050976Z",
+            "has_traded": true,
+            "state": "active"
+          },
+          "close": {
+            "symbol": "MELI",
+            "date": "2026-09-17",
+            "price": "1825.21",
+            "interpolated": false,
+            "source": "sip-list-exchange-close"
+          }
+        }
+      ]
+    },
+    "guide": "Each entry in results pairs the live quote with the official prior-session close for the same symbol. Current price: pick whichever of quote.last_trade_price / quote.last_non_reg_trade_price has the more recent timestamp, then verify that timestamp is recent before calling it \"current\" — otherwise phrase as \"as of <time>\". Daily change uses quote.adjusted_previous_close. \"Yesterday's close\" uses results[].close.price (official settled close); when a result is missing close — either closes_error is set tool-wide, or this symbol had no close in an otherwise-successful batch — fall back to quote.previous_close and tell the user the official close lookup is unavailable. Drop bid/ask when zero. Surface has_traded=false or any non-'active' state before quoting a price."
+  },
+  "captured_quotes": [
+    {
+      "symbol": "ADBE",
+      "price_usd": 250.1,
+      "trade_time_utc": "2026-09-18T18:57:49.208336469Z",
+      "checked_at": "2026-09-18T18:57:49Z",
+      "age_seconds_at_retrieval": -0.208,
+      "fresh_at_retrieval": false,
+      "session_at_retrieval": "regular",
+      "adjusted_previous_close": 252.67,
+      "previous_close_date": "2026-09-17",
+      "official_close": {
+        "symbol": "ADBE",
+        "date": "2026-09-17",
+        "price": "252.67",
+        "interpolated": false,
+        "source": "sip-list-exchange-close"
+      },
+      "state": "active",
+      "used_for_current_alert": false,
+      "reason": "Completion-time clock was after market close; do not backfill a signal from an earlier quote."
+    },
+    {
+      "symbol": "MELI",
+      "price_usd": 1801.74,
+      "trade_time_utc": "2026-09-18T18:57:49.224738928Z",
+      "checked_at": "2026-09-18T18:57:49Z",
+      "age_seconds_at_retrieval": -0.224,
+      "fresh_at_retrieval": false,
+      "session_at_retrieval": "regular",
+      "adjusted_previous_close": 1825.21,
+      "previous_close_date": "2026-09-17",
+      "official_close": {
+        "symbol": "MELI",
+        "date": "2026-09-17",
+        "price": "1825.21",
+        "interpolated": false,
+        "source": "sip-list-exchange-close"
+      },
+      "state": "active",
+      "used_for_current_alert": false,
+      "reason": "Completion-time clock was after market close; do not backfill a signal from an earlier quote."
+    }
+  ],
+  "financials_response": {
+    "data": {
+      "results": [
+        {
+          "symbol": "ADBE",
+          "period": "quarterly",
+          "financials": [
+            {
+              "fiscal_year": 2026,
+              "fiscal_quarter": 2,
+              "period_end_date": "2026-05-29",
+              "revenue": "6618000000.000000",
+              "gross_profit": "5903000000.000000",
+              "net_income": "1712000000.000000",
+              "net_margin": "25.870000"
+            }
+          ]
+        },
+        null
+      ]
+    },
+    "guide": "results is positional — aligned one-to-one with the requested symbols, in order. A null entry means that symbol could not be resolved (invalid, delisted, or non-equity) or has no reported financials available; surface it as \"no data for X\" rather than dropping it silently. Within an entry, financials is most-recent-first. Tell quarterly from annual rows by fiscal_quarter (null for annual). Present null metric values as \"not available\", not zero. net_margin is already a percentage — do not multiply by 100."
+  },
+  "news_discovery": {
+    "ADBE": {
+      "newest_article_at": "2026-09-14T19:15:27-04:00",
+      "articles_since_previous_success": [],
+      "filing_index": {
+        "data": {
+          "symbol": "ADBE",
+          "filings": [
+            {
+              "filing_id": "3c8a4e9a-73a3-4c2e-9484-b6aefeefaf6b",
+              "form_type": "4",
+              "description": "Insider Transaction",
+              "date_filed": "2026-09-17"
+            },
+            {
+              "filing_id": "8e18db0e-dc9c-4511-9287-c482982743c2",
+              "form_type": "4",
+              "description": "Insider Transaction",
+              "date_filed": "2026-09-17"
+            },
+            {
+              "filing_id": "baf164ba-1e7f-460d-9bbf-66474566d092",
+              "form_type": "4",
+              "description": "Insider Transaction",
+              "date_filed": "2026-09-17"
+            }
+          ]
+        },
+        "guide": "If next is non-empty, more filings are available — call this tool again with the cursor value from next to fetch the next page. Results are most-recent-first. When the question doesn't need more than the most recent filing's own embedded history (most questions), use the first result rather than filtering further. When the question needs data spanning further back than one filing embeds — a multi-year trend beyond ~3 years, a specific past quarter, confirming a disclosed subsequent event's follow-through in the next filing — widen since/until and select up to 3 of the returned filings covering the needed span, then pass all of their filing_ids to get_sec_filing_facts. If a query with specific filters (form_type, since/until) returns no filings, retry once with the filters loosened (drop form_type, or widen/drop the date range) before giving up; if it's still empty, say clearly that no matching filing was found rather than guessing from an unrelated one."
+      },
+      "assessment": "No new material item found in inspected sources; previously reported MELI financing and known earnings were deduplicated."
+    },
+    "MELI": {
+      "newest_article_at": "2026-09-11T12:30:25-04:00",
+      "articles_since_previous_success": [],
+      "filing_index": {
+        "data": {
+          "symbol": "MELI",
+          "filings": [
+            {
+              "filing_id": "8897136d-c9d8-4f97-a234-c3c847de6987",
+              "form_type": "8-K",
+              "description": "Current report",
+              "date_filed": "2026-09-14"
+            }
+          ]
+        },
+        "guide": "If next is non-empty, more filings are available — call this tool again with the cursor value from next to fetch the next page. Results are most-recent-first. When the question doesn't need more than the most recent filing's own embedded history (most questions), use the first result rather than filtering further. When the question needs data spanning further back than one filing embeds — a multi-year trend beyond ~3 years, a specific past quarter, confirming a disclosed subsequent event's follow-through in the next filing — widen since/until and select up to 3 of the returned filings covering the needed span, then pass all of their filing_ids to get_sec_filing_facts. If a query with specific filters (form_type, since/until) returns no filings, retry once with the filters loosened (drop form_type, or widen/drop the date range) before giving up; if it's still empty, say clearly that no matching filing was found rather than guessing from an unrelated one."
+      },
+      "assessment": "No new material item found in inspected sources; previously reported MELI financing and known earnings were deduplicated."
+    }
+  },
+  "inspected_primary_urls": [
+    "https://www.adobe.com/investor-relations/investor-news.html",
+    "https://investor.mercadolibre.com/",
+    "https://investor.mercadolibre.com/sec-filings"
+  ],
+  "deduplicated_event_ids": [
+    "MELI:2036-notes:closing:2026-09-14"
+  ],
+  "price_condition_states_preserved": true,
+  "last_success_watermark_preserved": true,
+  "result": {
+    "decision": "DONT_NOTIFY",
+    "status": "ended_after_regular_session",
+    "reason": "The run was delayed and the final clock check was 18:25:57 New York, after the 16:00 close. No old price signal was backfilled; defer further checks and any after-hours development to a normal session.",
+    "new_material_events_found": 0,
+    "price_alerts": [],
+    "valuation_alerts": [],
+    "trade_draft_created": false,
+    "account_data_read": false,
+    "broker_write_calls": 0,
+    "order_preview_calls": 0
+  }
+}

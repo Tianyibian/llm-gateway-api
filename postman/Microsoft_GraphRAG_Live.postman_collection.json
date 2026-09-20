@@ -1,0 +1,103 @@
+{
+  "info": {
+    "name": "Microsoft GraphRAG - Live",
+    "description": "Real local Microsoft GraphRAG index and real model calls. Start Uvicorn separately. OpenAI usage incurs cost. No keys or mock retrieval are included. Semantic smoke checks are not an accuracy benchmark.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Verify real index readiness",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Index is ready', () => { pm.response.to.have.status(200); const r = pm.response.json(); pm.expect(r.ready).to.eql(true); pm.expect(r.backend).to.eql('microsoft_graphrag'); pm.expect(r.available_modes).to.have.members(['local','global','drift']); pm.expect(r.counts.entities).to.be.above(0); pm.expect(r.counts.community_reports).to.be.above(0); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/api/graphrag/status"
+      }
+    },
+    {
+      "name": "2. Retrieve real review evidence with supervisor",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Real supervisor completes', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('complete'); });",
+              "pm.test('Evidence comes from Microsoft index', () => { const r = pm.response.json(); pm.expect(r.evidence.length).to.be.above(0); r.evidence.forEach(e => { pm.expect(e.source_id).to.match(/^microsoft_graphrag:(text_unit|community_report):/); pm.expect(e.text.length).to.be.above(0); pm.expect(e.tool).to.match(/^ms_/); }); });",
+              "pm.test('Selected citations exist in evidence ledger', () => { const r = pm.response.json(); const known = r.evidence.map(e => e.evidence_id); pm.expect(r.answer_evidence_ids.length).to.be.above(0); r.answer_evidence_ids.forEach(id => { pm.expect(known).to.include(id); pm.expect(r.answer).to.include('[' + id + ']'); }); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/graphrag/query",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Summarize the recurring support themes described in the sampled Eufy Smart Speaker Essential reviews.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "3. Reject out-of-scope coding request before retrieval",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Out-of-scope request is rejected without retrieval', () => { pm.response.to.have.status(200); const r = pm.response.json(); pm.expect(r.status).to.eql('rejected'); pm.expect(r.evidence).to.eql([]); pm.expect(r.tool_calls).to.eql(0); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/graphrag/query",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Write a Python solution to the Two Sum programming problem.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

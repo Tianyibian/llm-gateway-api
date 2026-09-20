@@ -1,0 +1,25 @@
+{
+  "run_at_utc": "2026-09-18T01:59:09.287870+00:00",
+  "requested_end": "2026-09-17",
+  "actual_end": "2026-09-16",
+  "weekly": 100.0,
+  "slippage_bps": 5.0,
+  "source": "Yahoo chart API; split/dividend adjusted daily open and close",
+  "files": {
+    "QQQ": {
+      "path": "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/five_year_dca_2026-09-17/qqq_2010-01-01_2026-09-17.csv",
+      "sha256": "b0ea22816c8f935aba3b8d7c065789ca4216f6a68e7fa4db8976807cff628739",
+      "rows": 4201
+    },
+    "QLD": {
+      "path": "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/five_year_dca_2026-09-17/qld_2010-01-01_2026-09-17.csv",
+      "sha256": "3113e28c6d2bea41b1330ba0c0d888c4a95b1c9ec9ac73be351abc9f580202c9",
+      "rows": 4201
+    },
+    "TQQQ": {
+      "path": "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/five_year_dca_2026-09-17/tqqq_2010-01-01_2026-09-17.csv",
+      "sha256": "6e4fb12de5f2311a66fcab8456ca6b6728c176d5f0536ec9f91625dda5f30481",
+      "rows": 4174
+    }
+  }
+}

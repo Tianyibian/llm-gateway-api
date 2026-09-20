@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "automation_id": "automation-2",
+  "timezone": "America/New_York",
+  "scope": [
+    "ADBE",
+    "MELI"
+  ],
+  "mode": "read_only_research",
+  "monitor_started_at": "2026-09-18T09:35:00-04:00",
+  "created_at": "2026-09-18T13:43:22Z",
+  "last_attempt_at": "2026-09-18T16:00:27Z",
+  "last_successful_run_at": "2026-09-18T13:37:30Z",
+  "last_completed_at": "2026-09-18T22:25:57Z",
+  "last_news_successful_run_at": "2026-09-18T13:37:30Z",
+  "initial_news_lookback_start": "2026-09-11T13:37:30Z",
+  "calendar": {
+    "date": "2026-09-18",
+    "trading_day": true,
+    "early_close": false,
+    "regular_open": "09:30",
+    "regular_close": "16:00",
+    "source_id": "nyse-calendar"
+  },
+  "symbols": {
+    "ADBE": {
+      "last_quote": {
+        "price_usd": 248.8308,
+        "trade_time_utc": "2026-09-18T13:43:09.966767178Z",
+        "trade_time_new_york": "2026-09-18 09:43:09",
+        "session": "regular",
+        "checked_at": "2026-09-18T13:43:22Z",
+        "age_seconds": 12.034,
+        "valid_for_thresholds": true,
+        "state": "active",
+        "adjusted_previous_close": 252.67,
+        "previous_close_date": "2026-09-17",
+        "official_close": {
+          "symbol": "ADBE",
+          "date": "2026-09-17",
+          "price": "252.67",
+          "interpolated": false,
+          "source": "sip-list-exchange-close"
+        },
+        "daily_change_pct": -1.51945224997031
+      },
+      "daily_move_condition": "inside",
+      "valuation_zone": "above",
+      "valuation_rule": {
+        "line_usd": 212,
+        "status": "active_research_only",
+        "last_baseline_verified_at": "2026-09-18T13:43:22Z",
+        "eps_basis": "FY2026 GAAP diluted EPS guidance midpoint",
+        "eps_midpoint": 18.145,
+        "assumed_five_year_eps_growth": 0.08,
+        "assumed_terminal_pe": 16,
+        "assumed_annual_return_hurdle": 0.15,
+        "alerted_for_current_zone": false,
+        "not_a_buy_signal": true
+      }
+    },
+    "MELI": {
+      "last_quote": {
+        "price_usd": 1801.95,
+        "trade_time_utc": "2026-09-18T13:43:20.135488229Z",
+        "trade_time_new_york": "2026-09-18 09:43:20",
+        "session": "regular",
+        "checked_at": "2026-09-18T13:43:22Z",
+        "age_seconds": 1.865,
+        "valid_for_thresholds": true,
+        "state": "active",
+        "adjusted_previous_close": 1825.21,
+        "previous_close_date": "2026-09-17",
+        "official_close": {
+          "symbol": "MELI",
+          "date": "2026-09-17",
+          "price": "1825.21",
+          "interpolated": false,
+          "source": "sip-list-exchange-close"
+        },
+        "daily_change_pct": -1.2743739076599425
+      },
+      "daily_move_condition": "inside",
+      "valuation_zone": "not_defined",
+      "valuation_rule": {
+        "line_usd": null,
+        "status": "no_verified_price_range"
+      }
+    }
+  },
+  "sources": [
+    {
+      "id": "nyse-calendar",
+      "url": "https://www.nyse.com/trade/hours-calendars",
+      "published_date": null,
+      "event_date": "2026-09-18",
+      "kind": "official_calendar",
+      "retrieved_date": "2026-09-18",
+      "last_checked_at": "2026-09-18T16:00:27Z"
+    },
+    {
+      "id": "adbe-investor-news",
+      "url": "https://www.adobe.com/investor-relations/investor-news.html",
+      "published_date": null,
+      "event_date": null,
+      "kind": "official_news_index",
+      "retrieved_date": "2026-09-18",
+      "last_checked_at": "2026-09-18T22:25:57Z"
+    },
+    {
+      "id": "adbe-fy2026-q3",
+      "url": "https://www.adobe.com/cc-shared/assets/investor-relations/pdfs/01906202/au56y4ter.pdf",
+      "published_date": "2026-09-10",
+      "event_date": "2026-08-28",
+      "kind": "known_background",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "meli-2026-q2",
+      "url": "https://www.sec.gov/Archives/edgar/data/1099590/000109959026000021/meli-20260805xex991.htm",
+      "published_date": "2026-08-05",
+      "event_date": "2026-06-30",
+      "kind": "known_background",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "meli-2036-notes-pricing",
+      "url": "https://www.sec.gov/Archives/edgar/data/1099590/000114036126036136/ef20081842_ex99-1.htm",
+      "published_date": "2026-09-10",
+      "event_date": "2026-09-09",
+      "kind": "outside_initial_lookback_background",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "meli-2036-notes-closing",
+      "url": "https://www.sec.gov/Archives/edgar/data/1099590/000114036126036495/ef20081942_8k.htm",
+      "published_date": "2026-09-14",
+      "event_date": "2026-09-14",
+      "kind": "material_financing_followthrough",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-pentland-form4",
+      "url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000153/xslF345X06/wk-form4_1789677090.xml",
+      "published_date": "2026-09-17",
+      "event_date": "2026-09-15",
+      "kind": "rsu_vesting_tax_withholding",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-forusz-form4",
+      "url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000152/xslF345X06/wk-form4_1789677079.xml",
+      "published_date": "2026-09-17",
+      "event_date": "2026-09-15",
+      "kind": "rsu_vesting_tax_withholding",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-day-form4",
+      "url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000151/xslF345X06/wk-form4_1789677064.xml",
+      "published_date": "2026-09-17",
+      "event_date": "2026-09-15",
+      "kind": "rsu_vesting_tax_withholding",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-firefly-contributor-bonus",
+      "url": "https://helpx.adobe.com/stock/contributor/submit-your-content/submit-generative-ai-content/firefly-faq.html",
+      "published_date": "2026-09-16",
+      "event_date": "2026-09-17",
+      "kind": "nonmaterial_administrative_update",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "meli-results-sec-index",
+      "url": "https://investor.mercadolibre.com/sec-filings",
+      "published_date": null,
+      "event_date": null,
+      "kind": "official_results_and_filings_index",
+      "retrieved_date": "2026-09-18",
+      "coverage_note": "Opened official page; dynamically rendered filing rows were not exposed in the opened text. The MCP index and public searches provided supplemental discovery; do not claim exhaustive coverage."
+    }
+  ],
+  "seen_events": [
+    {
+      "source_id": "adbe-fy2026-q3",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "classification": "known_background",
+      "reported": false
+    },
+    {
+      "source_id": "meli-2026-q2",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "classification": "known_background",
+      "reported": false
+    },
+    {
+      "source_id": "meli-2036-notes-pricing",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "classification": "outside_initial_lookback_background",
+      "reported": false
+    },
+    {
+      "source_id": "meli-2036-notes-closing",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "classification": "material_financing_followthrough",
+      "reported": true
+    },
+    {
+      "source_id": "adbe-pentland-form4",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "classification": "rsu_vesting_tax_withholding",
+      "reported": false
+    },
+    {
+      "source_id": "adbe-forusz-form4",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "classification": "rsu_vesting_tax_withholding",
+      "reported": false
+    },
+    {
+      "source_id": "adbe-day-form4",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "classification": "rsu_vesting_tax_withholding",
+      "reported": false
+    },
+    {
+      "source_id": "adbe-firefly-contributor-bonus",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "classification": "nonmaterial_administrative_update",
+      "reported": false
+    }
+  ],
+  "reported_events": [
+    {
+      "id": "MELI:2036-notes:closing:2026-09-14",
+      "symbol": "MELI",
+      "source_id": "meli-2036-notes-closing",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "event_date": "2026-09-14",
+      "published_date": "2026-09-14",
+      "classification": "material_financing_update_not_price_signal",
+      "facts": {
+        "principal_usd": 1000000000,
+        "coupon_rate": 0.0585,
+        "maturity_year": 2036,
+        "status": "offering_closed",
+        "use_of_proceeds": "general corporate purposes per earlier pricing release"
+      },
+      "calculations": {
+        "annual_contractual_coupon_usd": 58500000,
+        "method": "principal times coupon; not net incremental interest expense"
+      },
+      "assessment": "Financing review should include this debt and coupon burden. Proceeds are financing cash, not operating earnings or free cash flow. Closing follows pricing disclosed September 10; it is not a new September 18 surprise. No evidence here resolves credit-quality or operating-margin concerns; remain watch-only, no valuation line or trade draft.",
+      "report_status": "reported_in_this_run",
+      "reported_at": "2026-09-18T13:43:22Z"
+    }
+  ],
+  "daily_price_alerts": {
+    "2026-09-18": {
+      "ADBE": {
+        "up": false,
+        "down": false
+      },
+      "MELI": {
+        "up": false,
+        "down": false
+      }
+    }
+  },
+  "connection_status": {
+    "quotes": {
+      "status": "ok",
+      "last_success_at": "2026-09-18T18:57:49Z",
+      "alerted": false
+    },
+    "financials": {
+      "status": "partial_vendor_data_official_fallback_succeeded",
+      "adbe": "MCP latest quarter was FY2026 Q2; FY2026 Q3 verified from Adobe release",
+      "meli": "MCP returned null; Q2 shareholder letter verified on SEC",
+      "lost_monitoring_coverage": [],
+      "alerted": false,
+      "last_checked_at": "2026-09-18T22:25:57Z",
+      "notes": "Vendor limitation unchanged: ADBE returned FY2026 Q2 only and MELI returned no data. Previously verified official financial releases remain background, not refreshed real-time fundamentals."
+    },
+    "filing_index": {
+      "status": "ok",
+      "notes": "Material filing discovery supplemented with official IR and public SEC sources; not a guarantee of exhaustive filings.",
+      "last_checked_at": "2026-09-18T18:57:49Z"
+    },
+    "filing_content": {
+      "status": "vendor_unavailable_official_fallback_succeeded",
+      "filing_id": "8897136d-c9d8-4f97-a234-c3c847de6987",
+      "error": "API 404: Filing content is not available",
+      "fallback_source_id": "meli-2036-notes-closing",
+      "lost_monitoring_coverage": [],
+      "alerted": false
+    }
+  },
+  "last_result": {
+    "decision": "DONT_NOTIFY",
+    "status": "ended_after_regular_session",
+    "reason": "The run was delayed and the final clock check was 18:25:57 New York, after the 16:00 close. No old price signal was backfilled; defer further checks and any after-hours development to a normal session.",
+    "new_material_events_found": 0,
+    "price_alerts": [],
+    "valuation_alerts": [],
+    "trade_draft_created": false,
+    "account_data_read": false,
+    "broker_write_calls": 0,
+    "order_preview_calls": 0
+  },
+  "last_trigger_at": "2026-09-18T15:43:46.365Z",
+  "last_attempt_note": "Last fully successful run and price-condition states are deliberately preserved. Mid-run quotes are retained only in the audit; the monitor is not continuous."
+}

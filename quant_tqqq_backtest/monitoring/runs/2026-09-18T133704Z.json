@@ -1,0 +1,413 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-09-18T133704Z",
+  "triggered_at": "2026-09-18T13:37:04.028Z",
+  "checked_at": "2026-09-18T13:43:22Z",
+  "baseline_file": "/Users/tianyi/找工作/handson/quant_tqqq_backtest/output/fundamental_candidates_2026-09-17.md",
+  "first_run": true,
+  "calendar": {
+    "date": "2026-09-18",
+    "trading_day": true,
+    "early_close": false,
+    "regular_open": "09:30",
+    "regular_close": "16:00",
+    "source_id": "nyse-calendar"
+  },
+  "initial_quote_response": {
+    "data": {
+      "results": [
+        {
+          "quote": {
+            "symbol": "ADBE",
+            "last_trade_price": "248.890000",
+            "venue_last_trade_time": "2026-09-18T13:37:59.526904246Z",
+            "last_non_reg_trade_price": null,
+            "venue_last_non_reg_trade_time": null,
+            "adjusted_previous_close": "252.670000",
+            "previous_close": "252.670000",
+            "previous_close_date": "2026-09-17",
+            "bid_price": "248.890000",
+            "venue_bid_time": "2026-09-18T13:38:00.201347568Z",
+            "ask_price": "249.070000",
+            "venue_ask_time": "2026-09-18T13:38:00.201347568Z",
+            "has_traded": true,
+            "state": "active"
+          },
+          "close": {
+            "symbol": "ADBE",
+            "date": "2026-09-17",
+            "price": "252.67",
+            "interpolated": false,
+            "source": "sip-list-exchange-close"
+          }
+        },
+        {
+          "quote": {
+            "symbol": "MELI",
+            "last_trade_price": "1813.130000",
+            "venue_last_trade_time": "2026-09-18T13:37:54.844054624Z",
+            "last_non_reg_trade_price": null,
+            "venue_last_non_reg_trade_time": null,
+            "adjusted_previous_close": "1825.210000",
+            "previous_close": "1825.210000",
+            "previous_close_date": "2026-09-17",
+            "bid_price": "1814.000000",
+            "venue_bid_time": "2026-09-18T13:38:00.05889717Z",
+            "ask_price": "1816.430000",
+            "venue_ask_time": "2026-09-18T13:38:00.05889717Z",
+            "has_traded": true,
+            "state": "active"
+          },
+          "close": {
+            "symbol": "MELI",
+            "date": "2026-09-17",
+            "price": "1825.21",
+            "interpolated": false,
+            "source": "sip-list-exchange-close"
+          }
+        }
+      ]
+    },
+    "guide": "Each entry in results pairs the live quote with the official prior-session close for the same symbol. Current price: pick whichever of quote.last_trade_price / quote.last_non_reg_trade_price has the more recent timestamp, then verify that timestamp is recent before calling it \"current\" — otherwise phrase as \"as of <time>\". Daily change uses quote.adjusted_previous_close. \"Yesterday's close\" uses results[].close.price (official settled close); when a result is missing close — either closes_error is set tool-wide, or this symbol had no close in an otherwise-successful batch — fall back to quote.previous_close and tell the user the official close lookup is unavailable. Drop bid/ask when zero. Surface has_traded=false or any non-'active' state before quoting a price."
+  },
+  "final_quote_response": {
+    "data": {
+      "results": [
+        {
+          "quote": {
+            "symbol": "ADBE",
+            "last_trade_price": "248.830800",
+            "venue_last_trade_time": "2026-09-18T13:43:09.966767178Z",
+            "last_non_reg_trade_price": null,
+            "venue_last_non_reg_trade_time": null,
+            "adjusted_previous_close": "252.670000",
+            "previous_close": "252.670000",
+            "previous_close_date": "2026-09-17",
+            "bid_price": "248.730000",
+            "venue_bid_time": "2026-09-18T13:43:19.289380703Z",
+            "ask_price": "248.940000",
+            "venue_ask_time": "2026-09-18T13:43:19.289380703Z",
+            "has_traded": true,
+            "state": "active"
+          },
+          "close": {
+            "symbol": "ADBE",
+            "date": "2026-09-17",
+            "price": "252.67",
+            "interpolated": false,
+            "source": "sip-list-exchange-close"
+          }
+        },
+        {
+          "quote": {
+            "symbol": "MELI",
+            "last_trade_price": "1801.950000",
+            "venue_last_trade_time": "2026-09-18T13:43:20.135488229Z",
+            "last_non_reg_trade_price": null,
+            "venue_last_non_reg_trade_time": null,
+            "adjusted_previous_close": "1825.210000",
+            "previous_close": "1825.210000",
+            "previous_close_date": "2026-09-17",
+            "bid_price": "1800.230000",
+            "venue_bid_time": "2026-09-18T13:43:21.936242377Z",
+            "ask_price": "1802.510000",
+            "venue_ask_time": "2026-09-18T13:43:21.936242377Z",
+            "has_traded": true,
+            "state": "active"
+          },
+          "close": {
+            "symbol": "MELI",
+            "date": "2026-09-17",
+            "price": "1825.21",
+            "interpolated": false,
+            "source": "sip-list-exchange-close"
+          }
+        }
+      ]
+    },
+    "guide": "Each entry in results pairs the live quote with the official prior-session close for the same symbol. Current price: pick whichever of quote.last_trade_price / quote.last_non_reg_trade_price has the more recent timestamp, then verify that timestamp is recent before calling it \"current\" — otherwise phrase as \"as of <time>\". Daily change uses quote.adjusted_previous_close. \"Yesterday's close\" uses results[].close.price (official settled close); when a result is missing close — either closes_error is set tool-wide, or this symbol had no close in an otherwise-successful batch — fall back to quote.previous_close and tell the user the official close lookup is unavailable. Drop bid/ask when zero. Surface has_traded=false or any non-'active' state before quoting a price."
+  },
+  "quote_checks": {
+    "ADBE": {
+      "last_quote": {
+        "price_usd": 248.8308,
+        "trade_time_utc": "2026-09-18T13:43:09.966767178Z",
+        "trade_time_new_york": "2026-09-18 09:43:09",
+        "session": "regular",
+        "checked_at": "2026-09-18T13:43:22Z",
+        "age_seconds": 12.034,
+        "valid_for_thresholds": true,
+        "state": "active",
+        "adjusted_previous_close": 252.67,
+        "previous_close_date": "2026-09-17",
+        "official_close": {
+          "symbol": "ADBE",
+          "date": "2026-09-17",
+          "price": "252.67",
+          "interpolated": false,
+          "source": "sip-list-exchange-close"
+        },
+        "daily_change_pct": -1.51945224997031
+      },
+      "daily_move_condition": "inside",
+      "valuation_zone": "above",
+      "valuation_rule": {
+        "line_usd": 212,
+        "status": "active_research_only",
+        "last_baseline_verified_at": "2026-09-18T13:43:22Z",
+        "eps_basis": "FY2026 GAAP diluted EPS guidance midpoint",
+        "eps_midpoint": 18.145,
+        "assumed_five_year_eps_growth": 0.08,
+        "assumed_terminal_pe": 16,
+        "assumed_annual_return_hurdle": 0.15,
+        "alerted_for_current_zone": false,
+        "not_a_buy_signal": true
+      }
+    },
+    "MELI": {
+      "last_quote": {
+        "price_usd": 1801.95,
+        "trade_time_utc": "2026-09-18T13:43:20.135488229Z",
+        "trade_time_new_york": "2026-09-18 09:43:20",
+        "session": "regular",
+        "checked_at": "2026-09-18T13:43:22Z",
+        "age_seconds": 1.865,
+        "valid_for_thresholds": true,
+        "state": "active",
+        "adjusted_previous_close": 1825.21,
+        "previous_close_date": "2026-09-17",
+        "official_close": {
+          "symbol": "MELI",
+          "date": "2026-09-17",
+          "price": "1825.21",
+          "interpolated": false,
+          "source": "sip-list-exchange-close"
+        },
+        "daily_change_pct": -1.2743739076599425
+      },
+      "daily_move_condition": "inside",
+      "valuation_zone": "not_defined",
+      "valuation_rule": {
+        "line_usd": null,
+        "status": "no_verified_price_range"
+      }
+    }
+  },
+  "financials_response": {
+    "data": {
+      "results": [
+        {
+          "symbol": "ADBE",
+          "period": "quarterly",
+          "financials": [
+            {
+              "fiscal_year": 2026,
+              "fiscal_quarter": 2,
+              "period_end_date": "2026-05-29",
+              "revenue": "6618000000.000000",
+              "gross_profit": "5903000000.000000",
+              "net_income": "1712000000.000000",
+              "net_margin": "25.870000"
+            },
+            {
+              "fiscal_year": 2026,
+              "fiscal_quarter": 1,
+              "period_end_date": "2026-02-27",
+              "revenue": "6398000000.000000",
+              "gross_profit": "5734000000.000000",
+              "net_income": "1889000000.000000",
+              "net_margin": "29.520000"
+            }
+          ]
+        },
+        null
+      ]
+    },
+    "guide": "results is positional — aligned one-to-one with the requested symbols, in order. A null entry means that symbol could not be resolved (invalid, delisted, or non-equity) or has no reported financials available; surface it as \"no data for X\" rather than dropping it silently. Within an entry, financials is most-recent-first. Tell quarterly from annual rows by fiscal_quarter (null for annual). Present null metric values as \"not available\", not zero. net_margin is already a percentage — do not multiply by 100."
+  },
+  "filing_index": {
+    "ADBE": {
+      "data": {
+        "symbol": "ADBE",
+        "filings": [
+          {
+            "filing_id": "3c8a4e9a-73a3-4c2e-9484-b6aefeefaf6b",
+            "form_type": "4",
+            "description": "Insider Transaction",
+            "date_filed": "2026-09-17"
+          },
+          {
+            "filing_id": "8e18db0e-dc9c-4511-9287-c482982743c2",
+            "form_type": "4",
+            "description": "Insider Transaction",
+            "date_filed": "2026-09-17"
+          },
+          {
+            "filing_id": "baf164ba-1e7f-460d-9bbf-66474566d092",
+            "form_type": "4",
+            "description": "Insider Transaction",
+            "date_filed": "2026-09-17"
+          }
+        ]
+      },
+      "guide": "If next is non-empty, more filings are available — call this tool again with the cursor value from next to fetch the next page. Results are most-recent-first. When the question doesn't need more than the most recent filing's own embedded history (most questions), use the first result rather than filtering further. When the question needs data spanning further back than one filing embeds — a multi-year trend beyond ~3 years, a specific past quarter, confirming a disclosed subsequent event's follow-through in the next filing — widen since/until and select up to 3 of the returned filings covering the needed span, then pass all of their filing_ids to get_sec_filing_facts. If a query with specific filters (form_type, since/until) returns no filings, retry once with the filters loosened (drop form_type, or widen/drop the date range) before giving up; if it's still empty, say clearly that no matching filing was found rather than guessing from an unrelated one."
+    },
+    "MELI": {
+      "data": {
+        "symbol": "MELI",
+        "filings": [
+          {
+            "filing_id": "8897136d-c9d8-4f97-a234-c3c847de6987",
+            "form_type": "8-K",
+            "description": "Current report",
+            "date_filed": "2026-09-14"
+          }
+        ]
+      },
+      "guide": "If next is non-empty, more filings are available — call this tool again with the cursor value from next to fetch the next page. Results are most-recent-first. When the question doesn't need more than the most recent filing's own embedded history (most questions), use the first result rather than filtering further. When the question needs data spanning further back than one filing embeds — a multi-year trend beyond ~3 years, a specific past quarter, confirming a disclosed subsequent event's follow-through in the next filing — widen since/until and select up to 3 of the returned filings covering the needed span, then pass all of their filing_ids to get_sec_filing_facts. If a query with specific filters (form_type, since/until) returns no filings, retry once with the filters loosened (drop form_type, or widen/drop the date range) before giving up; if it's still empty, say clearly that no matching filing was found rather than guessing from an unrelated one."
+    }
+  },
+  "sources": [
+    {
+      "id": "nyse-calendar",
+      "url": "https://www.nyse.com/trade/hours-calendars",
+      "published_date": null,
+      "event_date": "2026-09-18",
+      "kind": "official_calendar",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-investor-news",
+      "url": "https://www.adobe.com/investor-relations/investor-news.html",
+      "published_date": null,
+      "event_date": null,
+      "kind": "official_news_index",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-fy2026-q3",
+      "url": "https://www.adobe.com/cc-shared/assets/investor-relations/pdfs/01906202/au56y4ter.pdf",
+      "published_date": "2026-09-10",
+      "event_date": "2026-08-28",
+      "kind": "known_background",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "meli-2026-q2",
+      "url": "https://www.sec.gov/Archives/edgar/data/1099590/000109959026000021/meli-20260805xex991.htm",
+      "published_date": "2026-08-05",
+      "event_date": "2026-06-30",
+      "kind": "known_background",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "meli-2036-notes-pricing",
+      "url": "https://www.sec.gov/Archives/edgar/data/1099590/000114036126036136/ef20081842_ex99-1.htm",
+      "published_date": "2026-09-10",
+      "event_date": "2026-09-09",
+      "kind": "outside_initial_lookback_background",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "meli-2036-notes-closing",
+      "url": "https://www.sec.gov/Archives/edgar/data/1099590/000114036126036495/ef20081942_8k.htm",
+      "published_date": "2026-09-14",
+      "event_date": "2026-09-14",
+      "kind": "material_financing_followthrough",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-pentland-form4",
+      "url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000153/xslF345X06/wk-form4_1789677090.xml",
+      "published_date": "2026-09-17",
+      "event_date": "2026-09-15",
+      "kind": "rsu_vesting_tax_withholding",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-forusz-form4",
+      "url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000152/xslF345X06/wk-form4_1789677079.xml",
+      "published_date": "2026-09-17",
+      "event_date": "2026-09-15",
+      "kind": "rsu_vesting_tax_withholding",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-day-form4",
+      "url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000151/xslF345X06/wk-form4_1789677064.xml",
+      "published_date": "2026-09-17",
+      "event_date": "2026-09-15",
+      "kind": "rsu_vesting_tax_withholding",
+      "retrieved_date": "2026-09-18"
+    },
+    {
+      "id": "adbe-firefly-contributor-bonus",
+      "url": "https://helpx.adobe.com/stock/contributor/submit-your-content/submit-generative-ai-content/firefly-faq.html",
+      "published_date": "2026-09-16",
+      "event_date": "2026-09-17",
+      "kind": "nonmaterial_administrative_update",
+      "retrieved_date": "2026-09-18"
+    }
+  ],
+  "events": [
+    {
+      "id": "MELI:2036-notes:closing:2026-09-14",
+      "symbol": "MELI",
+      "source_id": "meli-2036-notes-closing",
+      "first_seen_at": "2026-09-18T13:43:22Z",
+      "event_date": "2026-09-14",
+      "published_date": "2026-09-14",
+      "classification": "material_financing_update_not_price_signal",
+      "facts": {
+        "principal_usd": 1000000000,
+        "coupon_rate": 0.0585,
+        "maturity_year": 2036,
+        "status": "offering_closed",
+        "use_of_proceeds": "general corporate purposes per earlier pricing release"
+      },
+      "calculations": {
+        "annual_contractual_coupon_usd": 58500000,
+        "method": "principal times coupon; not net incremental interest expense"
+      },
+      "assessment": "Financing review should include this debt and coupon burden. Proceeds are financing cash, not operating earnings or free cash flow. Closing follows pricing disclosed September 10; it is not a new September 18 surprise. No evidence here resolves credit-quality or operating-margin concerns; remain watch-only, no valuation line or trade draft.",
+      "report_status": "reported_in_this_run",
+      "reported_at": "2026-09-18T13:43:22Z"
+    }
+  ],
+  "connection_status": {
+    "quotes": {
+      "status": "ok",
+      "last_success_at": "2026-09-18T13:43:22Z",
+      "alerted": false
+    },
+    "financials": {
+      "status": "partial_vendor_data_official_fallback_succeeded",
+      "adbe": "MCP latest quarter was FY2026 Q2; FY2026 Q3 verified from Adobe release",
+      "meli": "MCP returned null; Q2 shareholder letter verified on SEC",
+      "lost_monitoring_coverage": [],
+      "alerted": false
+    },
+    "filing_index": {
+      "status": "ok",
+      "notes": "Material filing discovery supplemented with official IR and public SEC sources; not a guarantee of exhaustive filings."
+    },
+    "filing_content": {
+      "status": "vendor_unavailable_official_fallback_succeeded",
+      "filing_id": "8897136d-c9d8-4f97-a234-c3c847de6987",
+      "error": "API 404: Filing content is not available",
+      "fallback_source_id": "meli-2036-notes-closing",
+      "lost_monitoring_coverage": [],
+      "alerted": false
+    }
+  },
+  "result": {
+    "decision": "NOTIFY",
+    "reason": "First-run seven-day review verified MELI September 14 completion of USD 1bn 2036 notes; report financing implications once, without a trade signal.",
+    "price_alerts": [],
+    "valuation_alerts": [],
+    "trade_draft_created": false,
+    "account_data_read": false,
+    "broker_write_calls": 0,
+    "order_preview_calls": 0
+  }
+}

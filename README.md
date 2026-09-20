@@ -1,5 +1,11 @@
 # LLM Gateway — RAG & LangGraph AI Assistant
 
+Neo4j now supports template-first queries and constrained Text-to-Cypher alongside
+Snowflake analytics and Microsoft GraphRAG. See [query strategies and setup](docs/neo4j-query-strategies.md).
+Business analytics default to Neo4j. Snowflake reporting is selected only with
+both `SNOWFLAKE_ENABLED=true` and `ANALYTICS_BACKEND=snowflake`; database failures
+never silently switch backends.
+
 **A production-style Generative AI backend with Retrieval-Augmented Generation
 (RAG), LangChain, LangGraph, streaming LLM APIs, and persistent multi-turn
 memory.**
@@ -11,6 +17,7 @@ memory.**
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-async%20ORM-d71f00)](https://www.sqlalchemy.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1)](https://www.postgresql.org/)
 [![pgvector](https://img.shields.io/badge/pgvector-HNSW-4169E1)](https://github.com/pgvector/pgvector)
+[![Snowflake](https://img.shields.io/badge/Snowflake-analytics-29B5E8)](https://www.snowflake.com/)
 [![Alembic](https://img.shields.io/badge/Alembic-migrations-6BA81E)](https://alembic.sqlalchemy.org/)
 [![Tests](https://img.shields.io/badge/tests-pytest%20%2B%20postman-0A9EDC)](#testing)
 [![License](https://img.shields.io/badge/license-MIT-black)](LICENSE)
@@ -26,13 +33,14 @@ of replaying history on every request.
 
 **Generative AI:** Retrieval-Augmented Generation (RAG), LangChain, LangGraph,
 LangChain Expression Language (LCEL), prompt engineering, Pydantic structured
-output, semantic search, text embeddings, vector similarity search, grounded
+output, Microsoft GraphRAG, community detection, Local/Global/DRIFT search,
+semantic search, text embeddings, vector similarity search, grounded
 generation, source citations, OpenAI Responses API, and Ollama.
 
 **Backend and data:** Python, FastAPI, asynchronous APIs, Server-Sent Events
 (SSE), PostgreSQL 17, pgvector, HNSW indexing, async SQLAlchemy ORM, asyncpg,
-Alembic migrations, Pydantic, Docker Compose, REST APIs, and dependency
-injection.
+Alembic migrations, Snowflake, dimensional analytics, parameterized SQL,
+Pydantic, Docker Compose, REST APIs, and dependency injection.
 
 **Engineering:** Object-oriented design, Factory and Adapter patterns,
 provider-agnostic model integration, stateful multi-turn conversations,
@@ -49,6 +57,9 @@ multimodal image understanding, pytest, Postman, and idempotent data ingestion.
 | **Optional orchestration** | Use the direct provider adapters by default, or enable LangChain through configuration without changing routes, persistence, or clients. |
 | **LangGraph assistant** | Classifies each query, follows a conditional graph branch, and streams a grounded answer with visible route and source metadata. |
 | **Knowledge Base RAG** | Loads CSV, HTML, PDF, and DOCX sources, creates local or OpenAI embeddings, retrieves with pgvector HNSW search, and returns citations. |
+| **Snowflake analytics** | Routes aggregate business questions through a structured plan and allowlisted SQL templates, then grounds the answer in warehouse rows. |
+| **Hierarchical GraphRAG agents** | A business supervisor delegates catalog, sales and review goals to specialist LangGraphs that independently select allowed Neo4j or Microsoft GraphRAG tools. Includes bounded calls, dependencies and evidence lineage. See [architecture](docs/hierarchical-agents.md). |
+| **Checked graph answers** | Schema-constrained Cypher, independent question-alignment review and Neo4j EXPLAIN preflight; parallel evidence mapping, answer reduction and source-ID validation produce a cited natural-language answer. |
 | **Image understanding** | Validates an uploaded image locally, then streams analysis from OpenAI vision without persisting the upload. |
 | **Stateful conversations** | Server-side history: send only the new user turn and the service prepends stored context. |
 | **Durable & transactional** | Async SQLAlchemy + PostgreSQL persistence; a turn is committed atomically, and a conversation auto-created by a failed first stream is cleaned up rather than left orphaned. |
@@ -103,7 +114,10 @@ adapter patterns.
 |---|---|---|
 | `POST` | `/api/chat` | Stateful multi-turn conversation. Returns a `conversation_id`; reuse it and send only the new turn. |
 | `POST` | `/api/reason` | Stateless reasoning-oriented response — a reasoned final answer plus a concise explanation (not hidden chain of thought). |
-| `POST` | `/api/classify` | Structured routing: `general_search`, `product_search`, `return_search`, or `knowledge_search`. |
+| `POST` | `/api/classify` | Structured routing: `general_search`, `product_search`, `policy_search`, `additional_search`, `analytics_search`, or `graph_rag_search`. |
+| `POST` | `/api/graphrag/guardrail` | Model-backed scope assessment and backend recommendation; no graph retrieval or conversation writes. |
+| `GET` | `/api/graphrag/status` | Inspect verified Microsoft GraphRAG index readiness and available search modes. |
+| `POST` | `/api/graphrag/query` | Guarded adaptive supervisor with real Microsoft GraphRAG evidence; unavailable adapters fail explicitly. |
 | `POST` | `/api/assistant` | Stateful multimodal LangGraph assistant. Accepts text JSON or multipart image input and persists completed turns. |
 | `GET` | `/api/knowledge/status` | Show compatible indexed document/chunk counts and embedding configuration. |
 
@@ -132,6 +146,13 @@ data: "[DONE]"
 
 Interactive docs are served at `/docs`; liveness at `/health`.
 
+See [GraphRAG guardrail and backend selection](docs/graphrag.md) for the policy,
+real-model evaluation commands, Postman checks, and Microsoft GraphRAG indexing
+preparation. [Microsoft GraphRAG setup and live tests](docs/microsoft-graphrag.md)
+documents the isolated runtime, real index, and supported query modes. Scope
+approval is not execution authorization. [Neo4j query strategies](docs/neo4j-query-strategies.md)
+documents the independent graph database, transactional snapshot and two query paths.
+
 ---
 
 ## Quick start
@@ -150,6 +171,9 @@ uvicorn app.main:app --reload
 
 Open `http://127.0.0.1:8000` for the local Aster assistant interface. It is
 served by FastAPI and requires no separate JavaScript build process.
+The chat now shows graph index readiness and expandable router, guardrail,
+supervisor-task, and source details. See [chat testing](docs/chat-testing.md)
+for examples and the distinction between saved messages and session-only traces.
 
 ```bash
 curl -N -X POST http://127.0.0.1:8000/api/chat \
@@ -180,6 +204,17 @@ curl -N -X POST http://127.0.0.1:8000/api/chat \
 | `OLLAMA_EMBEDDING_MODEL` / `OPENAI_EMBEDDING_MODEL` | Embedding model selected by the RAG provider |
 | `RAG_CHUNK_SIZE` / `RAG_CHUNK_OVERLAP` | Character-based chunking settings |
 | `RAG_RETRIEVAL_K` | Maximum number of chunks supplied to the grounded answer prompt |
+| `GRAPHRAG_GUARDRAIL_TIMEOUT_SECONDS` | Maximum duration of a graph scope assessment; default 90 seconds |
+| `GRAPHRAG_GUARDRAIL_MIN_CONFIDENCE` | Additional clarification threshold, not a calibrated safety guarantee; default 0.75 |
+| `MICROSOFT_GRAPHRAG_ENABLED` | Opt in to the real Microsoft GraphRAG adapter; default `false` |
+| `MICROSOFT_GRAPHRAG_ROOT` / `MICROSOFT_GRAPHRAG_PYTHON` | Server-owned verified workspace and isolated worker interpreter |
+| `MICROSOFT_GRAPHRAG_TIMEOUT_SECONDS` | Worker deadline; default 90 seconds |
+| `SNOWFLAKE_ENABLED` | Enable the optional Snowflake analytics branch; PostgreSQL remains the conversation database |
+| `SNOWFLAKE_ACCOUNT` / `SNOWFLAKE_USER` | Server-side Snowflake account and application identity |
+| `SNOWFLAKE_AUTH_METHOD` | Explicit `key_pair` (recommended) or legacy `password`; no automatic authentication fallback |
+| `SNOWFLAKE_PRIVATE_KEY_FILE` / `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` | Local PEM private key path and optional decryption passphrase; never commit either secret |
+| `SNOWFLAKE_WAREHOUSE` / `SNOWFLAKE_DATABASE` / `SNOWFLAKE_SCHEMA` | Snowflake query context |
+| `SNOWFLAKE_ROLE` | Read-only application role used by assistant queries |
 | `OPENAI_VISION_MODEL` | OpenAI model used only for explicit image-analysis requests |
 | `OPENAI_VISION_DETAIL` | `low`, `high`, `original`, or `auto`; defaults to `high` |
 | `VISION_MAX_IMAGE_BYTES` | Local upload limit; defaults to 10 MB |
@@ -239,6 +274,9 @@ START -> detect_modality
                         +-> general_answer ---------------------> END
                         +-> search_products -> product_answer -> END
                         +-> retrieve_knowledge -> knowledge_answer -> END
+                        +-> graph_rag -> scope gate -> supervisor -> END
+                        +-> plan_analytics -> query_snowflake
+                                              -> analytics_answer -> END
 ```
 
 The graph has separate input, output, and overall state schemas. Every node
@@ -260,6 +298,95 @@ documents, while preserving relational filters and source/version metadata.
 Policies belong in a versioned RAG knowledge pipeline with citations. A hybrid
 router can therefore send exact business facts to SQL/service APIs and
 unstructured policy questions to retrieval.
+
+### Snowflake business analytics
+
+Snowflake is an optional OLAP backend; it does not replace PostgreSQL. The
+assistant routes cross-record aggregation and trend questions to Snowflake,
+while conversations and messages remain in the transactional PostgreSQL
+database. The analytics planner returns a validated `AnalyticsQueryPlan`, not
+SQL. The execution service maps its intent to one of four parameterized,
+read-only templates:
+
+- `top_products_by_revenue`
+- `monthly_sales_trend`
+- `supplier_performance`
+- `category_performance`
+
+Each query has a maximum 20-row result, a statement timeout, a query tag, and a
+Snowflake query ID in the SSE source metadata when the driver provides one.
+
+Set up a development account in this order:
+
+1. Open `snowflake/setup.sql` in a Snowflake worksheet and run it with an
+   administrative role. Replace `YOUR_USER` in the final commented grant and
+   run that grant for the application user.
+2. Install the optional driver:
+
+   ```bash
+   python -m pip install -r requirements-snowflake.txt
+   ```
+
+3. Follow [Snowflake authentication](docs/snowflake-authentication.md) to prepare
+   a local key pair and register its public key with the intended Snowflake user.
+   Copy the Snowflake variables from `.env.example` into the local `.env` and
+   configure the account, user, private key path, and passphrase. Only enable
+   `SNOWFLAKE_ENABLED=true` after authentication and role grants are ready.
+   Keep `ANALYTICS_BACKEND=neo4j` for the default prototype; select
+   `ANALYTICS_BACKEND=snowflake` only after loading and verification.
+   Never put Snowflake credentials in Git, Postman, or browser code. Existing
+   password mode remains available only where the account's policy permits it.
+4. Run `python -m app.cli.prepare_snowflake_loader` to prepare a separate
+   encrypted loading key and private `.env.snowflake-loader`. Both are excluded
+   from Git and Docker. Execute the generated public-key-only script at
+   `.local/snowflake/loader/setup_loader.sql` in an authorized administrator
+   worksheet. It grants the separate loader SELECT/INSERT on exactly five
+   tables and access to a named staging area; the assistant stays read-only.
+   Then upload all fields and records from the five source files:
+
+   ```bash
+   python -m app.cli.load_snowflake
+   ```
+
+   The initial loader refuses nonempty targets, never truncates, and validates
+   all five COPY row counts before committing one transaction. Run only one
+   loader at a time; it is not a concurrent ingestion coordinator. Staged copies
+   remain for diagnosis and may incur storage charges. Local CSVs are unchanged.
+5. Run `python -m app.cli.verify_snowflake` to check table counts and 12 report
+   comparisons against CSV. Set `SNOWFLAKE_ENABLED=true` and
+   `ANALYTICS_BACKEND=snowflake`, restart the API, and send an analytics question
+   through `/api/assistant`:
+
+   ```bash
+   curl -N -X POST http://127.0.0.1:8000/api/assistant \
+     -H 'Content-Type: application/json' \
+     -d '{"query":"Which five products generated the most revenue in 2025?","user_id":"analytics-demo"}'
+   ```
+
+The `Snowflake Analytics - Live` Postman folder verifies the same full route.
+Its tests require a configured account and real loaded data; pytest continues
+to use deterministic fakes and consumes no Snowflake credits.
+
+#### CSV vs. Snowflake comparison experiment
+
+The local CSV implementation acts as a correctness baseline. The comparison
+command runs the same plan against CSV and Snowflake concurrently, normalizes
+Snowflake numeric types and column casing, prints both durations and row sets,
+and exits with status `0` only when the results match:
+
+```bash
+python -m app.cli.compare_analytics \
+  --intent top_products_by_revenue \
+  --start-date 2025-01-01 \
+  --end-date 2025-12-31 \
+  --limit 5
+```
+
+Run the other three intents with the same command. Latency is informative but
+not directly comparable as a benchmark: Snowflake includes network transport
+and may need to resume a suspended warehouse, whereas CSV executes in the API
+process. A later retrieval experiment can compare pgvector with Snowflake
+Cortex Search on the same Knowledge Base queries, relevance labels, and `k`.
 
 ### Knowledge Base RAG
 
@@ -284,7 +411,7 @@ embedding API credits. Run ingestion again after changing the embedding model
 or provider. Retrieval refuses to mix vectors from a different configured
 embedding space.
 
-`return_search` and `knowledge_search` share the retrieval branch. Only
+`policy_search` unifies return/refund policies and company support knowledge. Only
 `visibility=public` documents are eligible for assistant retrieval. Internal
 support DOCX files are indexed with `visibility=internal` as preparation for
 future role-based access, but the public assistant's SQL filter cannot return

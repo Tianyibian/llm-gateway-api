@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from typing import Literal, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Message(BaseModel):
@@ -28,9 +28,58 @@ class QueryRoute(str, Enum):
     """Supported destinations for the first-stage query router."""
 
     GENERAL_SEARCH = "general_search"
-    RETURN_SEARCH = "return_search"
+    ADDITIONAL_SEARCH = "additional_search"
     PRODUCT_SEARCH = "product_search"
-    KNOWLEDGE_SEARCH = "knowledge_search"
+    POLICY_SEARCH = "policy_search"
+    ANALYTICS_SEARCH = "analytics_search"
+    GRAPH_RAG_SEARCH = "graph_rag_search"
+
+
+class AnalyticsIntent(str, Enum):
+    """Allowlisted business questions supported by the analytics warehouse."""
+
+    TOP_PRODUCTS_BY_REVENUE = "top_products_by_revenue"
+    MONTHLY_SALES_TREND = "monthly_sales_trend"
+    SUPPLIER_PERFORMANCE = "supplier_performance"
+    CATEGORY_PERFORMANCE = "category_performance"
+
+
+class AnalyticsQueryPlan(BaseModel):
+    """Structured, non-SQL plan produced by the LLM analytics planner."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    intent: AnalyticsIntent
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    limit: int = Field(default=10, ge=1, le=20)
+    reason: str = Field(min_length=1, max_length=500)
+
+    @field_validator("end_date")
+    @classmethod
+    def end_date_must_not_precede_start_date(
+        cls,
+        value: Optional[date],
+        info,
+    ) -> Optional[date]:
+        start_date = info.data.get("start_date")
+        if value is not None and start_date is not None and value < start_date:
+            raise ValueError("end_date must be on or after start_date")
+        return value
+
+
+class AnalyticsPlanningDecision(BaseModel):
+    """Do not force an unsupported question into the closest SQL template."""
+
+    model_config = ConfigDict(extra="forbid")
+    supported: bool
+    plan: AnalyticsQueryPlan | None
+
+    @model_validator(mode="after")
+    def consistent_support(self):
+        if self.supported != (self.plan is not None):
+            raise ValueError("Supported decisions require a plan; unsupported decisions forbid one")
+        return self
 
 
 class ClassificationRequest(BaseModel):
@@ -46,7 +95,9 @@ class ClassificationRequest(BaseModel):
 
 
 class QueryClassification(BaseModel):
-    route: QueryRoute = Field(description="The search route selected for the query.")
+    # Keep the enum reference bare for OpenAI structured-output compatibility.
+    # Route documentation lives on QueryRoute and in the classifier prompt.
+    route: QueryRoute
     reason: str = Field(
         min_length=1,
         max_length=500,
@@ -57,6 +108,8 @@ class QueryClassification(BaseModel):
         le=1.0,
         description="Confidence in the route selection, from 0.0 to 1.0.",
     )
+    resolved_query: str | None = Field(default=None, min_length=1, max_length=10000,
+        description="Standalone question resolved only from explicit user conversation context; null if unnecessary or ambiguous.")
 
 
 class AssistantRequest(ClassificationRequest):

@@ -1,0 +1,87 @@
+name: CI
+
+# Continuous integration: every push and every pull request to main is built
+# and tested automatically, so a broken change is caught before it is merged.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:        # allows running the pipeline manually from the Actions tab
+
+concurrency:                # a new push cancels an in-flight run for the same branch
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The LangChain adapter requires 3.10+; 3.13 is the local dev version.
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip                      # reuse the wheel cache between runs
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run the test suite
+        # The suite runs against temporary SQLite databases with the LLM provider
+        # replaced by a deterministic fake, so it needs no API key and no live model.
+        env:
+          LLM_PROVIDER: ollama
+          DATABASE_URL: sqlite+aiosqlite:///./ci_test.db
+        run: pytest -q --maxfail=1
+
+  lint:
+    name: Lint & format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      # Non-blocking for now: reports issues without failing the build, so the
+      # pipeline can be tightened gradually rather than breaking every push.
+      - name: Lint
+        run: ruff check . --output-format=github || true
+
+      - name: Format check
+        run: ruff format --check . || true
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    needs: test                      # only build the image once the tests pass
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build the application image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false                # build-only: proves the image is reproducible
+          tags: smart-ai-assistant:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

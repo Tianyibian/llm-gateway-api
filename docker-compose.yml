@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------------------
+# Local development stack.
+#   docker compose up -d postgres   # database only (matches the README workflow)
+#   docker compose up -d            # database + API
+# ---------------------------------------------------------------------------
+services:
+  postgres:
+    # pgvector image: PostgreSQL 17 with the vector extension preinstalled,
+    # which the RAG knowledge_chunks table and its HNSW index require.
+    image: pgvector/pgvector:pg17
+    container_name: llm_gateway_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-llm_gateway}
+      POSTGRES_USER: ${POSTGRES_USER:-llm_gateway}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-llm_gateway_local}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-llm_gateway} -d ${POSTGRES_DB:-llm_gateway}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: llm_gateway_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy      # wait for the database to accept connections
+    env_file:
+      - .env
+    environment:
+      # Override the host: inside the compose network the database is "postgres",
+      # not 127.0.0.1 as in the local .env.
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-llm_gateway}:${POSTGRES_PASSWORD:-llm_gateway_local}@postgres:5432/${POSTGRES_DB:-llm_gateway}
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:

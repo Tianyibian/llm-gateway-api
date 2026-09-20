@@ -1,0 +1,89 @@
+# Microsoft GraphRAG 3.1.2; independent of the application's pgvector store.
+completion_models:
+  default_completion_model:
+    model_provider: openai
+    model: gpt-5.6-luna
+    api_key: ${GRAPHRAG_API_KEY}
+    call_args:
+      reasoning_effort: none
+      max_completion_tokens: 3500
+      timeout: 60
+    retry:
+      type: exponential_backoff
+      max_retries: 2
+      base_delay: 2.0
+      max_delay: 5.0
+embedding_models:
+  default_embedding_model:
+    model_provider: openai
+    model: text-embedding-3-small
+    api_key: ${GRAPHRAG_API_KEY}
+    call_args:
+      timeout: 60
+    retry:
+      type: exponential_backoff
+      max_retries: 2
+      base_delay: 2.0
+      max_delay: 5.0
+concurrent_requests: 2
+async_mode: asyncio
+input:
+  type: text
+chunking:
+  type: tokens
+  size: 1000
+  overlap: 100
+  encoding_model: o200k_base
+input_storage:
+  type: file
+  base_dir: input
+output_storage:
+  type: file
+  base_dir: output
+reporting:
+  type: file
+  base_dir: logs
+cache:
+  type: json
+  storage:
+    type: file
+    base_dir: cache
+vector_store:
+  type: lancedb
+  db_uri: output/lancedb
+  vector_size: 1536
+extract_graph:
+  prompt: prompts/business_extract_graph.txt
+  entity_types: [Product, Supplier, Category, SupportTopic]
+  max_gleanings: 0
+summarize_descriptions:
+  max_length: 250
+cluster_graph:
+  max_cluster_size: 10
+  use_lcc: false
+extract_claims:
+  enabled: false
+community_reports:
+  max_length: 900
+  max_input_length: 6000
+snapshots:
+  graphml: true
+local_search:
+  max_context_tokens: 5000
+  top_k_entities: 6
+  top_k_relationships: 8
+global_search:
+  max_context_tokens: 6000
+  data_max_tokens: 6000
+  map_max_length: 400
+  reduce_max_length: 500
+drift_search:
+  concurrency: 1
+  primer_folds: 1
+  drift_k_followups: 1
+  n_depth: 1
+  data_max_tokens: 5000
+  local_search_max_data_tokens: 4000
+  primer_llm_max_tokens: 1500
+  local_search_llm_max_gen_completion_tokens: 1500
+  reduce_max_completion_tokens: 1500

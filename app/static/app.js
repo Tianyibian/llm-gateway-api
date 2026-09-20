@@ -26,8 +26,10 @@ localStorage.setItem(USER_ID_KEY, userId);
 const routeLabels = {
   general_search: "General assistance",
   product_search: "Product catalog",
-  return_search: "Return policy",
-  knowledge_search: "Knowledge Base",
+  additional_search: "Additional information needed",
+  policy_search: "Policies and support",
+  analytics_search: "Snowflake analytics",
+  graph_rag_search: "GraphRAG: Neo4j / Microsoft",
   vision_analysis: "Image analysis",
 };
 
@@ -76,16 +78,17 @@ function addAssistantMessage(content = null) {
   const sources = document.createElement("div");
   sources.className = "source-panel";
 
-  body.append(meta, route, answer, sources);
+  const inspector = GraphInspector.create();
+  body.append(meta, route, inspector.overview, answer, sources, inspector.panel);
   article.append(avatar, body);
   conversation.append(article);
-  return { answer, route, sources };
+  return { answer, route, sources, inspector, receivedDelta: false, streamFinished: false };
 }
 
 function renderWelcome() {
   conversation.replaceChildren();
   addAssistantMessage(
-    "I can answer general questions, search product data, remember this conversation, and analyze an attached image."
+    "Ask a question and the router will select a branch. Try review themes for Microsoft GraphRAG, then expand Execution details to see scope decisions, retrieval tasks, and evidence. Use full product names for graph questions."
   );
 
   const suggestions = document.createElement("section");
@@ -95,6 +98,9 @@ function renderWelcome() {
     ["What can you help me with?", "What can you help me with?"],
     ["Show me Philips Hue smart locks and their inventory.", "Find Philips Hue smart locks"],
     ["Can I return an installed smart lock?", "Ask about a return"],
+    ["Which five products generated the most revenue in 2025?", "Analyze product revenue"],
+    ["Summarize the recurring support themes described in the sampled Eufy Smart Speaker Essential reviews.", "GraphRAG: review themes"],
+    ["Compare the setup and connectivity concerns in the sampled Eufy Smart Speaker Essential and Belkin Wemo Security System Pro reviews. Describe where retrieved evidence is insufficient.", "GraphRAG: compare two products"],
   ].forEach(([prompt, label]) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -302,31 +308,84 @@ function showKnowledgeSources(container, payload) {
   });
 }
 
+function showAnalyticsRows(container, payload) {
+  container.replaceChildren();
+  const rows = payload.rows ?? [];
+  if (!rows.length) return;
+
+  const title = document.createElement("div");
+  title.className = "source-title";
+  const duration = Number.isFinite(Number(payload.elapsed_ms))
+    ? ` · ${Number(payload.elapsed_ms).toFixed(0)} ms`
+    : "";
+  title.textContent = `Snowflake result${duration}`;
+  container.append(title);
+
+  rows.slice(0, 5).forEach((row) => {
+    const card = document.createElement("div");
+    card.className = "product-card";
+    Object.entries(row).forEach(([key, value]) => {
+      const field = document.createElement("span");
+      field.textContent = `${key.replaceAll("_", " ")}: ${value}`;
+      card.append(field);
+    });
+    container.append(card);
+  });
+}
+
 function handleEvent(eventName, payload, message) {
   if (eventName === "metadata" && payload.conversation_id) {
     conversationId = payload.conversation_id;
     localStorage.setItem(CONVERSATION_ID_KEY, conversationId);
   } else if (eventName === "route") {
+    GraphInspector.record(message.inspector, "Router", payload);
     message.route.hidden = false;
     const confidence = Math.round(payload.confidence * 100);
     const provider = payload.provider ? ` · ${payload.provider}` : "";
     message.route.textContent = `${routeLabels[payload.route] ?? payload.route}${provider} · ${confidence}%`;
     message.route.title = payload.reason;
-    message.answer.textContent = payload.route === "vision_analysis" ? "Reading the image" : "";
-    message.answer.classList.remove("thinking");
+    message.answer.textContent = payload.route === "vision_analysis" ? "Reading the image"
+      : payload.route === "graph_rag_search" ? "Checking GraphRAG scope and retrieving evidence. This may take a few minutes…"
+      : "Preparing a response…";
+  } else if (eventName === "guardrail") {
+    GraphInspector.record(message.inspector, "Guardrail", payload);
+  } else if (eventName === "clarification") {
+    GraphInspector.record(message.inspector, "Clarification guardrail", payload);
+  } else if (eventName === "supervisor") {
+    GraphInspector.record(message.inspector, "Supervisor", payload);
+  } else if (eventName === "agent") {
+    GraphInspector.record(message.inspector, "Subagent", payload);
+    if (!message.receivedDelta) message.answer.textContent = payload.stage === "started"
+      ? `${payload.agent} is working on its assigned question…`
+      : `${payload.agent}: ${payload.status}. Preparing the next step…`;
+  } else if (eventName === "answer_generation") {
+    GraphInspector.record(message.inspector, "Answer generation", payload);
+    if (!message.receivedDelta) {
+      message.answer.textContent = payload.stage === "map"
+        ? `Reading evidence (${payload.completed}/${payload.total})…`
+        : payload.stage === "reduce" ? "Combining evidence into an answer…"
+        : payload.stage === "validate_citations" ? "Checking answer citations…"
+        : payload.stage === "complete" ? "Answer validated. Preparing delivery…"
+        : "Could not produce a validated answer.";
+    }
   } else if (eventName === "sources") {
-    if (payload.documents?.length) showKnowledgeSources(message.sources, payload);
+    if (payload.backend === "snowflake") showAnalyticsRows(message.sources, payload);
+    else if (payload.documents?.length) showKnowledgeSources(message.sources, payload);
     else showProducts(message.sources, payload);
   } else if (eventName === "delta") {
     message.answer.classList.remove("thinking");
-    if (["Routing your question", "Reading the image"].includes(message.answer.textContent)) {
+    if (!message.receivedDelta) {
       message.answer.textContent = "";
+      message.receivedDelta = true;
     }
     message.answer.textContent += payload.content;
   } else if (eventName === "error") {
+    message.streamFinished = true;
     message.answer.classList.remove("thinking");
     message.answer.classList.add("error-text");
     message.answer.textContent = payload.message ?? "The assistant request failed.";
+  } else if (eventName === "done") {
+    message.streamFinished = true;
   }
   scrollToLatest();
 }
@@ -354,6 +413,30 @@ async function readEventStream(response, message) {
       handleEvent(eventName, payload, message);
     }
     if (done) break;
+  }
+  if (!message.streamFinished) throw new Error("The response stream ended before completion.");
+}
+
+async function refreshGraphStatus() {
+  const badge = document.querySelector("#graph-index-status");
+  const button = document.querySelector("#refresh-graph-status");
+  button.disabled = true;
+  badge.textContent = "Checking graph index…";
+  try {
+    const response = await fetch("/api/graphrag/status");
+    if (!response.ok) throw new Error("Status request failed");
+    const status = await response.json();
+    badge.textContent = status.ready
+      ? `Graph index ready · ${status.counts.entities} entities`
+      : "Graph index unavailable";
+    badge.title = status.ready
+      ? `Available: ${status.available_modes.join(", ")}. Local index readiness, not a model connectivity check.`
+      : "Check Microsoft GraphRAG configuration and index verification. Other routes may still work.";
+  } catch {
+    badge.textContent = "Graph status unavailable";
+    badge.title = "Start the API server, then refresh.";
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -404,6 +487,8 @@ async function sendQuery(query) {
   clearAttachment();
   input.placeholder = "Ask about products, inventory, or anything else…";
   sendButton.disabled = true;
+  newConversationButton.disabled = true;
+  refreshConversationsButton.disabled = true;
   scrollToLatest();
 
   try {
@@ -442,6 +527,8 @@ async function sendQuery(query) {
     console.error(error);
   } finally {
     sendButton.disabled = false;
+    newConversationButton.disabled = false;
+    refreshConversationsButton.disabled = false;
     input.focus();
     scrollToLatest();
   }
@@ -470,6 +557,7 @@ conversation.addEventListener("click", (event) => {
 });
 
 conversationList.addEventListener("click", async (event) => {
+  if (sendButton.disabled) return;
   const button = event.target.closest("[data-conversation-action]");
   if (!button) return;
   const { conversationAction: action, conversationId: id } = button.dataset;
@@ -485,6 +573,7 @@ conversationList.addEventListener("click", async (event) => {
 });
 
 newConversationButton.addEventListener("click", startNewConversation);
+document.querySelector("#refresh-graph-status").addEventListener("click", refreshGraphStatus);
 refreshConversationsButton.addEventListener("click", () => loadConversations());
 
 imageInput.addEventListener("change", () => {
@@ -498,3 +587,4 @@ removeAttachmentButton.addEventListener("click", () => {
 });
 
 loadConversations({ restoreActive: true });
+refreshGraphStatus();

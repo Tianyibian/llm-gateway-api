@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "automation_id": "automation-2",
+  "run_id": "2026-09-18T222717Z",
+  "triggered_at": "2026-09-18T22:27:17.176Z",
+  "checked_at": "2026-09-18T22:27:21Z",
+  "checked_at_new_york": "2026-09-18T18:27:21-04:00",
+  "calendar": {
+    "date": "2026-09-18",
+    "trading_day": true,
+    "early_close": false,
+    "regular_close": "16:00",
+    "source_url": "https://www.nyse.com/trade/hours-calendars"
+  },
+  "result": {
+    "decision": "DONT_NOTIFY",
+    "status": "skipped_outside_regular_session",
+    "reason": "Current New York time is after the regular close. No market data or account data read; no old signals backfilled.",
+    "market_data_read": false,
+    "account_data_read": false,
+    "broker_write_calls": 0,
+    "order_preview_calls": 0,
+    "trade_draft_created": false,
+    "last_success_watermark_preserved": true,
+    "price_condition_states_preserved": true
+  }
+}

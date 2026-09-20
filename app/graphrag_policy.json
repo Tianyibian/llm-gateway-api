@@ -1,0 +1,56 @@
+{
+  "version": "aster-business-graph-v2",
+  "backend_capabilities": {
+    "neo4j": "Optional backend for exact Product-Supplier-Category relationships, bounded multi-hop traversal and Order/OrderLine counts, units and discounted net revenue. Uses reviewed Cypher templates first, otherwise a validated structured plan compiled to parameterized read-only Cypher. Broad aggregates require no named entity. Explicit calendar dates only; ambiguous relative dates need clarification. No arbitrary commands, writes, customer/employee/contact records, live stock, document themes, policies or reviews. Readiness and a source-verified full business snapshot are checked separately at execution.",
+    "microsoft_graphrag": "Optional Microsoft GraphRAG backend for document-derived entity context (Local Search), corpus-wide business themes (Global Search), and bounded cross-document exploration (DRIFT Search). Choose for explanations, community reports, and relationships described in reviewed documents. Index readiness is checked separately by the server. Sampled product reviews are unverified opinions, not authoritative policies or statistically representative data. No live inventory, exact revenue calculations, arbitrary SQL/Cypher, writes, or reviewer identification."
+  },
+  "scope_definition": "Read-only questions about the Aster smart-home business corpus: products, suppliers, categories, orders/order lines, documented policies and support topics. Permit catalog relationships, counts, units, discounted revenue rankings and monthly trends in Neo4j; document theme summaries and exploratory synthesis in Microsoft GraphRAG. Neo4j is the default analytics backend; optional Snowflake reporting can be selected upstream. Both ordinary reports and relationship-dependent analytics are allowed here. Purchases, arbitrary code/database commands, secrets, private customer/employee records, unrelated coding tasks, live stock and undefined financial metrics are unsupported. Mixed requests must not silently discard tasks. Unresolved pronouns and relative dates require clarification. Broad analytical or corpus-wide questions need no named entity. This domain contract is not proof of loaded facts or backend availability.",
+  "entity_types": [
+    "Product",
+    "Supplier",
+    "Category",
+    "Order",
+    "OrderLine",
+    "Policy",
+    "SupportTopic"
+  ],
+  "relations": [
+    {"source_type": "Order", "relation": "CONTAINS", "target_type": "OrderLine"},
+    {"source_type": "OrderLine", "relation": "OF_PRODUCT", "target_type": "Product"},
+    {
+      "source_type": "Product",
+      "relation": "SUPPLIED_BY",
+      "target_type": "Supplier"
+    },
+    {
+      "source_type": "Product",
+      "relation": "BELONGS_TO",
+      "target_type": "Category"
+    },
+    {
+      "source_type": "Product",
+      "relation": "COVERED_BY",
+      "target_type": "Policy"
+    },
+    {
+      "source_type": "Category",
+      "relation": "COVERED_BY",
+      "target_type": "Policy"
+    },
+    {
+      "source_type": "Product",
+      "relation": "HAS_TOPIC",
+      "target_type": "SupportTopic"
+    },
+    {
+      "source_type": "Category",
+      "relation": "HAS_TOPIC",
+      "target_type": "SupportTopic"
+    },
+    {
+      "source_type": "SupportTopic",
+      "relation": "EXPLAINED_BY",
+      "target_type": "Policy"
+    }
+  ]
+}

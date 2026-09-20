@@ -35,6 +35,7 @@ openai_base_url = http://127.0.0.1:8001
 ollama_base_url = http://127.0.0.1:8002
 router_base_url = http://127.0.0.1:8002
 router_user_id = postman-router-user
+snowflake_base_url = http://127.0.0.1:8002
 conversation_base_url = http://127.0.0.1:8002
 conversation_user_id = postman-user
 conversation_id = (set automatically)
@@ -73,28 +74,29 @@ Expected matrix:
 
 ## 4. Run the live router tests
 
-Open the **Router - Live Model** folder and run its five requests in order. The
-first four call `/api/classify` through the real Ollama model and verify every
-supported structured-output route:
+Open the **Router - Live Model** folder and run its six requests in order. The
+first five call `/api/classify` through the real Ollama model and verify the
+established structured-output routes below:
 
 | Case | Expected route | Capability |
 | --- | --- | --- |
 | Greeting and joke | `general_search` | No company data required |
 | Product price and inventory | `product_search` | Structured catalog lookup required |
-| Return eligibility and window | `return_search` | Return-policy RAG required |
-| Password reset | `knowledge_search` | Help-center RAG required |
+| Return eligibility and window | `policy_search` | Return-policy RAG required |
+| Password reset | `policy_search` | Help-center RAG required |
+| Product revenue ranking | `analytics_search` | Aggregate warehouse query required |
 
 Each classifier request asserts HTTP 200, the exact route, the complete
 `route`/`reason`/`confidence` schema, a non-empty reason, and confidence within
 the valid 0-to-1 range.
 
-The fifth request is deliberately more comprehensive. It calls
-`/api/assistant` and verifies the actual LangGraph `return_search` branch,
+The sixth request is deliberately more comprehensive. It calls
+`/api/assistant` and verifies the actual LangGraph `policy_search` branch,
 pgvector document sources, an SSE answer containing at least one numbered
 citation, `[DONE]`, and no error event. These are live integration tests: they
 do not use the deterministic fake services from pytest.
 
-Before running the fifth request, build the local RAG index once:
+Before running the sixth request, build the local RAG index once:
 
 ```bash
 alembic upgrade head
@@ -126,3 +128,32 @@ stateful flow does not consume OpenAI API credits. Set it to
 `http://127.0.0.1:8001` only when you intentionally want to repeat the same flow
 through OpenAI. Creating a new conversation at the beginning makes repeated
 collection runs independent.
+
+## 6. Run the live Snowflake analytics route
+
+Complete the Snowflake setup and data-load steps in the project README, set
+`SNOWFLAKE_ENABLED=true`, and restart the Ollama server. Then run only the
+**Snowflake Analytics - Live** folder. The request verifies that the real model
+selects `analytics_search`, the graph emits Snowflake rows and backend metadata,
+the answer streams to completion, and no error event is returned. Snowflake
+credentials remain in the server's local `.env`; never add them to Postman.
+
+## GraphRAG scope checks
+
+Import the separate `GraphRAG_Guardrail.postman_collection.json` collection and
+set `base_url` to the running server. Its six requests call the real model via
+`/api/graphrag/guardrail`; they check backend selection, mixed requests, missing
+referents, secrets, and unsupported relationships. They do not perform graph
+retrieval or use mock responses. An incorrect model decision fails the test.
+
+See [the GraphRAG guide](../docs/graphrag.md) for current limitations and an
+18-case live evaluation runner. These direct guardrail checks do not substitute
+for a live evaluation of the first-stage classifier's routing accuracy.
+
+## Microsoft GraphRAG live checks
+
+Import `Microsoft_GraphRAG_Live.postman_collection.json` for real index readiness,
+supervisor retrieval, and an out-of-scope rejection. Start Uvicorn separately and
+set `base_url`; keep the OpenAI key in the server's ignored `.env`, not Postman.
+These requests use the configured real model and index and may incur API cost.
+See [runtime setup](../docs/microsoft-graphrag.md) before running the collection.

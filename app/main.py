@@ -7,9 +7,11 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.conversation_routes import router as conversation_router
 from app.api.routes import router
+from app.api.graphrag_routes import router as graphrag_router
 from app.core.config import get_settings
 from app.db.session import engine
 from app.services.factory import LLMServiceFactory
+from app.services.snowflake_analytics import dispose_snowflake_engines
 
 settings = get_settings()
 
@@ -18,6 +20,7 @@ settings = get_settings()
 async def lifespan(_: FastAPI):
     yield
     await engine.dispose()
+    dispose_snowflake_engines()
 
 
 app = FastAPI(
@@ -32,6 +35,7 @@ app = FastAPI(
 )
 app.include_router(router)
 app.include_router(conversation_router)
+app.include_router(graphrag_router)
 
 static_dir = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -49,4 +53,5 @@ async def health() -> dict[str, str]:
         "configured_provider": settings.llm_provider,
         "provider": LLMServiceFactory(settings).resolve_provider(),
         "orchestrator": settings.llm_orchestrator,
+        "analytics_backend": LLMServiceFactory(settings).resolve_analytics_backend(),
     }

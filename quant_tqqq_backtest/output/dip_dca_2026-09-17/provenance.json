@@ -1,0 +1,19 @@
+{
+  "created_utc": "2026-09-18T02:42:22.077779+00:00",
+  "strategy_status": "User-confirmed: only idle/new money waits; existing TQQQ is never sold.",
+  "threshold": -0.01,
+  "weekly_deposit": 100,
+  "slippage_bps_each_side": 5,
+  "actual_execution": "Next session open after adjusted QQQ close-to-close loss >= 1%",
+  "synthetic_execution": "Next session close, because reliable synthetic intraday prices are unavailable",
+  "treasury_proxy": "Prior available 3-month Treasury yield, lagged 2 business days, actual/365 carry less 0.10% pa; no bond price change modeling",
+  "sha256": {
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/five_year_dca_2026-09-17/qqq_2010-01-01_2026-09-17.csv": "b0ea22816c8f935aba3b8d7c065789ca4216f6a68e7fa4db8976807cff628739",
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/five_year_dca_2026-09-17/qld_2010-01-01_2026-09-17.csv": "3113e28c6d2bea41b1330ba0c0d888c4a95b1c9ec9ac73be351abc9f580202c9",
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/five_year_dca_2026-09-17/tqqq_2010-01-01_2026-09-17.csv": "6e4fb12de5f2311a66fcab8456ca6b6728c176d5f0536ec9f91625dda5f30481",
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/dip_dca_2026-09-17/sgov_2020-01-01_2026-09-17.csv": "4a5e3b5ebbad616bfd912a4895618b4c6fce6945051c605dbd9261c1387549e6",
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/output/dotcom_stress_2026-09-17/synthetic_paths_illustrative_cost.csv": "152731479417f648d6e429495685f079af5e07a01d230fd478fb20fbf934a9e9",
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/dip_dca_2026-09-17/fred_DGS3MO.csv": "88cce74c998831d4a30f42ca68131e368e8ab41d7de47dffc3887f62152b25da",
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/dotcom_stress_2026-09-17/qqq_1985-01-01_2026-09-17.csv": "d1dbb13d408f09333e2e4d0124f55e57b726b661c97639c74a38076824c452f8"
+  }
+}

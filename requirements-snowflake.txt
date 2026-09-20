@@ -1,0 +1,4 @@
+# Optional Snowflake analytics backend. Install after the main LangChain runtime.
+-r requirements-langchain.txt
+snowflake-sqlalchemy>=1.7,<2
+cryptography>=42

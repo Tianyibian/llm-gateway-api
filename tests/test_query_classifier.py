@@ -99,3 +99,29 @@ def test_classifier_receives_conversation_history_for_follow_up_routing() -> Non
 def test_classifier_prompt_defines_every_supported_route() -> None:
     for route in QueryRoute:
         assert route.value in QueryClassifier.SYSTEM_PROMPT
+
+
+@pytest.mark.parametrize("backend,expected", [("neo4j", QueryRoute.GRAPH_RAG_SEARCH), ("snowflake", QueryRoute.ANALYTICS_SEARCH)])
+def test_configuration_enforces_analytics_route_even_if_model_ignores_policy(backend, expected):
+    service = QueryClassifier(chain=FakeClassificationChain({
+        "route":"analytics_search", "reason":"Revenue report", "confidence":0.99,
+    }), provider="fake", model="fake", analytics_backend=backend)
+    result = asyncio.run(service.classify("Top products by revenue"))
+    assert result.route is expected
+
+
+@pytest.mark.parametrize("enabled,preferred,expected", [
+    (False, "neo4j", "neo4j"), (False, "snowflake", "neo4j"),
+    (True, "neo4j", "neo4j"), (True, "snowflake", "snowflake"),
+])
+def test_snowflake_requires_both_enablement_and_backend_selection(enabled, preferred, expected):
+    from app.core.config import Settings
+    from app.services.factory import LLMServiceFactory
+    factory = LLMServiceFactory(Settings(_env_file=None, snowflake_enabled=enabled, analytics_backend=preferred))
+    assert factory.resolve_analytics_backend() == expected
+
+
+def test_classification_route_schema_has_no_ref_siblings():
+    schema = QueryClassification.model_json_schema()
+    assert schema["properties"]["route"] == {"$ref": "#/$defs/QueryRoute"}
+    assert set(schema["$defs"]["QueryRoute"]["enum"]) == {route.value for route in QueryRoute}

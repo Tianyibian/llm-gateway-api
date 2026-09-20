@@ -1,0 +1,19 @@
+name: smart-support-graph
+services:
+  neo4j:
+    image: neo4j:5.26
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?Generate .env.neo4j first}
+      NEO4J_server_databases_default__to__read__only: ${NEO4J_READ_ONLY:-true}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+      NEO4J_db_transaction_timeout: 10s
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - business_graph:/data
+volumes:
+  business_graph:

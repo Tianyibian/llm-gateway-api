@@ -76,7 +76,7 @@ class FakeClassifier:
         del history
         self.queries.append(query)
         return QueryClassification(
-            route=QueryRoute.RETURN_SEARCH,
+            route=QueryRoute.POLICY_SEARCH,
             reason="The query requires the return policy.",
             confidence=0.98,
         )
@@ -475,9 +475,10 @@ def test_classify_returns_validated_route(api_client) -> None:
 
     assert response.status_code == 200
     assert response.json() == {
-        "route": "return_search",
+        "route": "policy_search",
         "reason": "The query requires the return policy.",
         "confidence": 0.98,
+        "resolved_query": None,
     }
     assert classifier.queries == ["Can I return an installed smart lock?"]
 

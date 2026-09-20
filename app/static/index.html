@@ -43,6 +43,7 @@
             <div><span class="route-dot product"></span>Product catalog</div>
             <div><span class="route-dot return"></span>Return policy RAG</div>
             <div><span class="route-dot knowledge"></span>Knowledge Base RAG</div>
+            <div><span class="route-dot knowledge"></span>Microsoft GraphRAG</div>
             <div><span class="route-dot vision"></span>Image understanding</div>
           </div>
           <footer>
@@ -58,7 +59,11 @@
             <p class="eyebrow">ASSISTANT</p>
             <h2 id="current-conversation-title">New conversation</h2>
           </div>
-          <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">API docs</a>
+          <div class="topbar-actions">
+            <span id="graph-index-status" class="graph-index-status" role="status">Checking graph index…</span>
+            <button id="refresh-graph-status" class="docs-link" type="button">Refresh index</button>
+            <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">API docs</a>
+          </div>
         </header>
 
         <div id="conversation" class="conversation" aria-live="polite">
@@ -70,6 +75,8 @@
                 I can answer general questions and search the live demonstration
                 product catalog for price, inventory, supplier, and category information.
                 Attach an image when you want OpenAI vision to describe or read it.
+                Ask about review themes to explore Microsoft GraphRAG, then expand
+                Execution details to inspect routing, scope decisions, tasks, and sources.
               </p>
             </div>
           </article>
@@ -83,6 +90,9 @@
             </button>
             <button type="button" data-prompt="Can I return an installed smart lock?">
               Ask about a return
+            </button>
+            <button type="button" data-prompt="Summarize the recurring support themes described in the sampled Eufy Smart Speaker Essential reviews.">
+              Explore GraphRAG reviews
             </button>
           </section>
         </div>
@@ -118,11 +128,13 @@
             <span aria-hidden="true">↗</span>
           </button>
           <p class="composer-note">
-            Product answers use demonstration data. Image analysis sends the selected image to OpenAI and may incur API usage charges.
+            Router selects the branch automatically. GraphRAG uses sampled, unverified reviews and may take a few minutes.
+            OpenAI requests incur API charges. Execution details are visible for this session only.
           </p>
         </form>
       </section>
     </main>
+    <script src="/static/graph-inspector.js" defer></script>
     <script src="/static/app.js" defer></script>
   </body>
 </html>

@@ -1,0 +1,12 @@
+{
+  "created_utc": "2026-09-18T02:10:44.525978+00:00",
+  "index": "FRED NASDAQXNDX; Nasdaq-100 total-return index, not Nasdaq Composite",
+  "start": "1999-03-04",
+  "end": "2026-09-16",
+  "peak": "2000-03-27",
+  "post_crash_trough": "2002-10-07",
+  "sources": {
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/dotcom_stress_2026-09-17/fred_NASDAQXNDX.csv": "401cd9ab626eff43d7ee5ef8d14c1bb8e514d23dc73c6114d66a9ab18313dc4a",
+    "/Users/tianyi/\u627e\u5de5\u4f5c/handson/quant_tqqq_backtest/data/dotcom_stress_2026-09-17/fred_DFF.csv": "5e6353cb47a2dfd03a0e932cf4a9193e392ab1d8f957fbfa0f6d7c3f1315a207"
+  }
+}
