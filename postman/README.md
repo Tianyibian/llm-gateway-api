@@ -81,7 +81,7 @@ established structured-output routes below:
 | Case | Expected route | Capability |
 | --- | --- | --- |
 | Greeting and joke | `general_search` | No company data required |
-| Product price and inventory | `product_search` | Structured catalog lookup required |
+| Product supplier relationship | `graph_rag_search` | Guarded Neo4j catalog retrieval |
 | Return eligibility and window | `policy_search` | Return-policy RAG required |
 | Password reset | `policy_search` | Help-center RAG required |
 | Product revenue ranking | `analytics_search` | Aggregate warehouse query required |
@@ -157,3 +157,18 @@ supervisor retrieval, and an out-of-scope rejection. Start Uvicorn separately an
 set `base_url`; keep the OpenAI key in the server's ignored `.env`, not Postman.
 These requests use the configured real model and index and may incur API cost.
 See [runtime setup](../docs/microsoft-graphrag.md) before running the collection.
+
+## Uploaded file questions
+
+Import `File_Query.postman_collection.json` for real-model file routing, multipart
+upload and missing-file checks. In request 2, select `examples/file-query-demo.txt`
+from your computer. See [the file-query guide](../docs/file-query.md) for limits
+and retention behavior. These calls use the configured model and may incur charges.
+# Direct GraphRAG task planner
+
+For the current port-8000 prototype, import
+`GraphRAG_Task_Planner.postman_collection.json`. It tests real multi-tool
+decomposition, evidence-dependent follow-ups and guardrail rejection without
+creating conversations. Configure a request timeout of at least 620 seconds.
+`GraphRAG_Search_Modes.postman_collection.json` compares Local and Global.
+These collections call actual configured providers, not mocked responses.

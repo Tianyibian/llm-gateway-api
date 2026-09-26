@@ -48,7 +48,7 @@ class MicrosoftGraphRAGClient:
         except (OSError, ValueError, KeyError, TypeError):
             return {"ready": False, "backend": "microsoft_graphrag", "available_modes": []}
 
-    async def query(self, question: str, mode: str):
+    async def query(self, question: str, mode: str = "local"):
         if mode not in MODES.values() or not question.strip() or len(question) > 10_000:
             raise ValueError("Invalid graph query")
         if not self.status()["ready"]:

@@ -1,10 +1,13 @@
+"""Legacy MySQL preprocessing reference, not the production indexing entry point."""
+from pathlib import Path
+
 import pandas as pd
 import os
 import re
 from sqlalchemy import create_engine
 
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = str(Path(__file__).resolve().parents[2])
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'output_data')
 
 

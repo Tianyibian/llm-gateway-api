@@ -48,7 +48,7 @@ Examples: 'Monthly sales in 2026' -> supported monthly_sales_trend;
         except ImportError as exc:
             raise LLMConfigurationError(
                 "Analytics planning requires LangChain. Install "
-                "requirements-langchain.txt."
+                "requirements/langchain.txt."
             ) from exc
 
         prompt = ChatPromptTemplate.from_messages(

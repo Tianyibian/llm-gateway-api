@@ -40,11 +40,11 @@
         <div class="sidebar-footer">
           <div class="route-list" aria-label="Available routes">
             <div><span class="route-dot general"></span>General assistance</div>
-            <div><span class="route-dot product"></span>Product catalog</div>
-            <div><span class="route-dot return"></span>Return policy RAG</div>
-            <div><span class="route-dot knowledge"></span>Knowledge Base RAG</div>
-            <div><span class="route-dot knowledge"></span>Microsoft GraphRAG</div>
+            <div><span class="route-dot return"></span>Policy &amp; knowledge search</div>
+            <div><span class="route-dot knowledge"></span>Clarification</div>
+            <div><span class="route-dot knowledge"></span>GraphRAG &amp; business queries</div>
             <div><span class="route-dot vision"></span>Image understanding</div>
+            <div><span class="route-dot knowledge"></span>Uploaded file query</div>
           </div>
           <footer>
             <span class="status-dot"></span>
@@ -72,8 +72,9 @@
             <div class="message-body">
               <div class="message-meta">Aster</div>
               <p>
-                I can answer general questions and search the live demonstration
-                product catalog for price, inventory, supplier, and category information.
+                I can answer general questions, retrieve policy documents, and use
+                graph tools for supported supplier and category relationships.
+                Direct price and inventory lookup is unavailable.
                 Attach an image when you want OpenAI vision to describe or read it.
                 Ask about review themes to explore Microsoft GraphRAG, then expand
                 Execution details to inspect routing, scope decisions, tasks, and sources.
@@ -85,8 +86,8 @@
             <button type="button" data-prompt="What can you help me with?">
               What can you help me with?
             </button>
-            <button type="button" data-prompt="Show me Philips Hue smart locks and their inventory.">
-              Find Philips Hue smart locks
+            <button type="button" data-prompt="Who supplies Philips Hue Smart Lock Max?">
+              Find a product supplier
             </button>
             <button type="button" data-prompt="Can I return an installed smart lock?">
               Ask about a return
@@ -97,14 +98,22 @@
           </section>
         </div>
 
+        <div class="search-mode-control">
+          <label for="graphrag-search-mode">Microsoft GraphRAG search</label>
+          <select id="graphrag-search-mode" aria-describedby="search-mode-help">
+            <option value="local" selected>Local — entity-focused (default)</option>
+            <option value="global">Global — corpus themes</option>
+          </select>
+          <small id="search-mode-help">Applies only to the reviews agent. Neo4j, policy, files and images are unchanged.</small>
+        </div>
         <form id="composer" class="composer">
           <div id="attachment-preview" class="attachment-preview" hidden>
             <img id="attachment-image" alt="Selected upload preview" />
             <div>
               <strong id="attachment-name"></strong>
-              <span>Image analysis uses OpenAI</span>
+              <span id="attachment-info">Image analysis uses OpenAI</span>
             </div>
-            <button id="remove-attachment" type="button" aria-label="Remove image">×</button>
+            <button id="remove-attachment" type="button" aria-label="Remove attachment">×</button>
           </div>
           <input
             id="image-input"
@@ -115,13 +124,17 @@
           <label class="attach-button" for="image-input" aria-label="Attach an image" title="Attach image">
             <span aria-hidden="true">＋</span>
           </label>
+          <input id="file-input" class="sr-only" type="file" accept=".txt,.md,.pdf" />
+          <label class="attach-button" for="file-input" aria-label="Attach a document" title="Attach TXT, Markdown or PDF (5 MB max)">
+            <span aria-hidden="true">File</span>
+          </label>
           <label class="sr-only" for="query">Message Aster</label>
           <textarea
             id="query"
             name="query"
             rows="1"
             maxlength="10000"
-            placeholder="Ask about products, inventory, or anything else…"
+            placeholder="Ask about policies, product relationships, reviews, or sales…"
           ></textarea>
           <button id="send-button" type="submit" aria-label="Send message">
             <span>Send</span>
@@ -129,7 +142,9 @@
           </button>
           <p class="composer-note">
             Router selects the branch automatically. GraphRAG uses sampled, unverified reviews and may take a few minutes.
-            OpenAI requests incur API charges. Execution details are visible for this session only.
+            OpenAI requests incur API charges. Uploaded documents are sent to the configured model; do not upload secrets.
+            Files are request-scoped: reattach for follow-ups. Questions and answers remain in conversation history.
+            Execution details are visible for this session only.
           </p>
         </form>
       </section>

@@ -23,7 +23,7 @@ from app.services.factory import LLMServiceFactory
 from app.services.query_classifier import QueryClassifier
 from app.services.knowledge_service import KnowledgeRetriever
 from app.services.streaming import encode_sse
-from app.services.vision_service import OpenAIVisionService
+from app.api.assistant_uploads import parse_assistant_form
 from app.core.config import Settings, get_settings
 
 router = APIRouter(prefix="/api", tags=["llm"])
@@ -104,6 +104,7 @@ async def _stream_assistant(
     delete_if_empty_on_failure: bool,
     image_bytes: bytes | None = None,
     image_mime_type: str | None = None,
+    file_document: dict | None = None,
 ) -> AsyncIterator[str]:
     yield encode_sse(
         "metadata",
@@ -111,6 +112,7 @@ async def _stream_assistant(
             "provider": service.provider,
             "model": service.model,
             "service": "assistant",
+            "graphrag_search_mode": request.graphrag_search_mode,
             "conversation_id": conversation_id,
         },
     )
@@ -122,6 +124,8 @@ async def _stream_assistant(
             history=history,
             image_bytes=image_bytes,
             image_mime_type=image_mime_type,
+            **({"file_document": file_document} if file_document is not None else {}),
+            **({"graphrag_search_mode": request.graphrag_search_mode} if request.graphrag_search_mode != "local" else {}),
         ):
             if event_name == "delta":
                 assistant_chunks.append(payload.get("content", ""))
@@ -343,44 +347,14 @@ async def assistant(
 ) -> StreamingResponse:
     image_bytes: bytes | None = None
     image_mime_type: str | None = None
+    file_document = None
     content_type = http_request.headers.get("content-type", "").lower()
 
     try:
         if content_type.startswith("application/json"):
             request = AssistantRequest.model_validate(await http_request.json())
         elif content_type.startswith("multipart/form-data"):
-            form = await http_request.form()
-            request = AssistantRequest.model_validate(
-                {
-                    "query": form.get("query"),
-                    "user_id": form.get("user_id"),
-                    "conversation_id": form.get("conversation_id") or None,
-                }
-            )
-            image = form.get("image")
-            if image is not None:
-                if not hasattr(image, "read"):
-                    raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                        detail="image must be a file upload",
-                    )
-                image_bytes = await image.read(settings.vision_max_image_bytes + 1)
-                await image.close()
-                if len(image_bytes) > settings.vision_max_image_bytes:
-                    raise HTTPException(
-                        status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                        detail=(
-                            "Image exceeds the "
-                            f"{settings.vision_max_image_bytes // (1024 * 1024)} MB limit."
-                        ),
-                    )
-                try:
-                    image_mime_type = OpenAIVisionService.validate_image(image_bytes)
-                except ValueError as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                        detail=str(exc),
-                    ) from exc
+            request, image_bytes, image_mime_type, file_document = await parse_assistant_form(http_request, settings)
         else:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -426,6 +400,7 @@ async def assistant(
             delete_if_empty_on_failure=delete_if_empty_on_failure,
             image_bytes=image_bytes,
             image_mime_type=image_mime_type,
+            file_document=file_document,
         ),
         media_type="text/event-stream",
         headers={

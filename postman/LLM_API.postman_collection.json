@@ -228,7 +228,7 @@
                 "exec": [
                   "const data = pm.response.json();",
                   "pm.test('HTTP status is 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence'));",
+                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence', 'resolved_query'));",
                   "pm.test('Route is general_search', () => pm.expect(data.route).to.eql('general_search'));",
                   "pm.test('Reason is present', () => pm.expect(data.reason).to.be.a('string').and.not.empty);",
                   "pm.test('Confidence is between 0 and 1', () => pm.expect(data.confidence).to.be.within(0, 1));"
@@ -258,7 +258,7 @@
           }
         },
         {
-          "name": "2 - Product Search Classification",
+          "name": "2 - Catalog Relationship Classification",
           "event": [
             {
               "listen": "test",
@@ -267,8 +267,8 @@
                 "exec": [
                   "const data = pm.response.json();",
                   "pm.test('HTTP status is 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence'));",
-                  "pm.test('Route is product_search', () => pm.expect(data.route).to.eql('product_search'));",
+                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence', 'resolved_query'));",
+                  "pm.test('Route is graph_rag_search', () => pm.expect(data.route).to.eql('graph_rag_search'));",
                   "pm.test('Reason is present', () => pm.expect(data.reason).to.be.a('string').and.not.empty);",
                   "pm.test('Confidence is between 0 and 1', () => pm.expect(data.confidence).to.be.within(0, 1));"
                 ]
@@ -285,7 +285,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"What is the price and current inventory for the Philips Hue Smart Lock Max?\"\n}",
+              "raw": "{\n  \"query\": \"Who supplies the Philips Hue Smart Lock Max?\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -293,7 +293,7 @@
               }
             },
             "url": "{{router_base_url}}/api/classify",
-            "description": "A live classification for exact product catalog facts."
+            "description": "A live classification for supplier relationships through the guarded GraphRAG branch."
           }
         },
         {
@@ -306,7 +306,7 @@
                 "exec": [
                   "const data = pm.response.json();",
                   "pm.test('HTTP status is 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence'));",
+                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence', 'resolved_query'));",
                   "pm.test('Route is policy_search', () => pm.expect(data.route).to.eql('policy_search'));",
                   "pm.test('Reason is present', () => pm.expect(data.reason).to.be.a('string').and.not.empty);",
                   "pm.test('Confidence is between 0 and 1', () => pm.expect(data.confidence).to.be.within(0, 1));"
@@ -345,7 +345,7 @@
                 "exec": [
                   "const data = pm.response.json();",
                   "pm.test('HTTP status is 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence'));",
+                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence', 'resolved_query'));",
                   "pm.test('Route is policy_search', () => pm.expect(data.route).to.eql('policy_search'));",
                   "pm.test('Reason is present', () => pm.expect(data.reason).to.be.a('string').and.not.empty);",
                   "pm.test('Confidence is between 0 and 1', () => pm.expect(data.confidence).to.be.within(0, 1));"
@@ -384,7 +384,7 @@
                 "exec": [
                   "const data = pm.response.json();",
                   "pm.test('HTTP status is 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence'));",
+                  "pm.test('Response has the structured router schema', () => pm.expect(data).to.have.all.keys('route', 'reason', 'confidence', 'resolved_query'));",
                   "pm.test('Route is analytics_search', () => pm.expect(data.route).to.eql('analytics_search'));",
                   "pm.test('Reason is present', () => pm.expect(data.reason).to.be.a('string').and.not.empty);",
                   "pm.test('Confidence is between 0 and 1', () => pm.expect(data.confidence).to.be.within(0, 1));"

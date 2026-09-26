@@ -164,17 +164,17 @@ def test_factory_construction_provides_separate_specialist_graphs():
 def test_assistant_stream_exposes_subagents_then_maps_not_private_plans():
     from langchain_core.language_models.fake_chat_models import FakeListChatModel
     from app.services.assistant_service import AssistantGraphService
-    from app.services.product_catalog import ProductCatalog
     from app.models.schemas import QueryRoute
     from tests.test_assistant_service import FakeClassifier, PROJECT_ROOT
     from tests.test_graph_answer import generator
     service, _, _ = supervisor(Plans(delegate(assignment(), assignment("reviews_agent", REVIEWS)), finish("E1", "E2")))
     service.answer_generator = generator()[0]
     assistant = AssistantGraphService.from_model(classifier=FakeClassifier(QueryRoute.GRAPH_RAG_SEARCH),
-        model_client=FakeListChatModel(responses=["unused"]), product_catalog=ProductCatalog(PROJECT_ROOT / "Business_data"),
+        model_client=FakeListChatModel(responses=["unused"]),
         graph_guardrail=service.guardrail, graph_supervisor=service, provider="test", model="test")
     async def run():
-        return [item async for item in assistant.stream(ROOT)]
+        # This fixture intentionally supplies only a Global Search review tool.
+        return [item async for item in assistant.stream(ROOT, graphrag_search_mode="global")]
     events = asyncio.run(run())
     started = [p for n, p in events if n == "agent" and p["stage"] == "started"]
     assert {p["agent"] for p in started} == {"catalog_agent", "reviews_agent"}

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "automation_id": "automation-2",
+  "run_id": "2026-09-25T083150Z",
+  "trigger_at": "2026-09-25T08:31:50.519Z",
+  "started_at": "2026-09-25T11:10:53Z",
+  "completed_at": "2026-09-25T11:11:33Z",
+  "actual_local_start": "2026-09-25T07:10:53-04:00",
+  "timezone": "America/New_York",
+  "scope": [
+    "ADBE",
+    "MELI"
+  ],
+  "calendar": {
+    "date": "2026-09-25",
+    "trading_day": true,
+    "early_close": false,
+    "regular_open": "09:30",
+    "regular_close": "16:00",
+    "source_id": "nyse-calendar",
+    "source_url": "https://www.nyse.com/trade/hours-calendars",
+    "checked_at": "2026-09-25T11:10:53Z"
+  },
+  "previous_successful_run_at": "2026-09-24T13:39:45Z",
+  "previous_news_successful_run_at": "2026-09-24T13:36:12Z",
+  "successful_watermarks_advanced": false,
+  "pending_review_count": 3,
+  "result": {
+    "decision": "DONT_NOTIFY",
+    "status": "skipped_before_regular_open",
+    "reason": "Actual execution began at 07:10:53 EDT on September 25, outside normal-session monitoring hours. Pending disclosures remain deferred until an eligible regular-session check. No current risk or signal assessment made.",
+    "market_data_checked": false,
+    "news_checked": false,
+    "new_material_events_found": null,
+    "price_alerts": [],
+    "valuation_alerts": [],
+    "trade_draft_created": false,
+    "account_data_read": false,
+    "broker_write_calls": 0,
+    "order_preview_calls": 0
+  },
+  "rule_changes": [],
+  "note": "Premarket skip; historical quotes/conditions, connection statuses, prior assessments and pending-review entries unchanged. No broker tools called."
+}

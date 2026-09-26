@@ -735,3 +735,21 @@ a {
     animation-duration: 0.01ms !important;
   }
 }
+
+.search-mode-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+}
+.search-mode-control select {
+  max-width: 100%;
+  font: inherit;
+  color: inherit;
+  background: inherit;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 6px;
+}
+.search-mode-control small { flex-basis: 100%; }

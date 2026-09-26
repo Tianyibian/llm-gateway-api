@@ -84,6 +84,12 @@ Return GraphScopeAssessment:
 Do not treat your confidence as proof of safety. A Python validator checks the
 output. Use the same rules for English, Chinese, or mixed-language questions.
 
+The standalone CSV product lookup has been removed. Current product price,
+inventory, technical specifications and compatibility are not supported by the
+approved graph tools. Historical order-line prices are not current catalog prices.
+Mark these direct lookup requests out_of_scope (or mixed if combined with a
+supported task); never substitute review opinions or sales facts for them.
+
 Decision examples (names are illustrative, not known database records):
 * "Using Neo4j, show monthly sales for 2025" -> in_scope, graph_analytics,
   neo4j; entity_types=[Order,OrderLine]; entity_mentions=[];
@@ -250,7 +256,7 @@ Unsupported tasks, writes, secrets and invented schema remain prohibited.
         if getattr(self, "_scope_only", False):
             # Scope approval grants no backend capability. Every child tool task
             # still uses the strict backend-aware gate below in a separate instance.
-            return self._decision("allow", "scope_approved", "Supported business scope; subagent tool checks are still required.",
+            return self._decision("allow", "scope_approved", "Supported business scope; per-task tool checks are still required.",
                                   entity_mentions=assessment.entity_mentions)
         if assessment.backend is GraphBackend.NEO4J and assessment.intent is GraphIntent.CORPUS_SUMMARY:
             return self._decision("clarify", "backend_capability_mismatch",
@@ -272,9 +278,12 @@ Unsupported tasks, writes, secrets and invented schema remain prohibited.
                 return self._decision("clarify", "missing_relation",
                                       "Which relationship would you like to investigate?")
         modes = {
-            GraphIntent.ENTITY_RELATIONSHIPS: ["local"],
-            GraphIntent.CORPUS_SUMMARY: ["global"],
-            GraphIntent.EXPLORATORY: ["local", "drift"],
+            # Search strategy is a request choice, not a wider data permission.
+            # Domain, backend, schema, secrets, writes and transaction checks above
+            # still apply. Both strategies read the same approved document index.
+            GraphIntent.ENTITY_RELATIONSHIPS: ["local", "global"],
+            GraphIntent.CORPUS_SUMMARY: ["local", "global"],
+            GraphIntent.EXPLORATORY: ["local", "global", "drift"],
         }
         selected_modes = modes[assessment.intent] if assessment.backend is GraphBackend.MICROSOFT_GRAPHRAG else []
         selected_tools = [f"{mode}_search" for mode in selected_modes] if selected_modes else ["query_relationships"]

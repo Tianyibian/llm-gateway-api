@@ -2,7 +2,10 @@ const conversation = document.querySelector("#conversation");
 const form = document.querySelector("#composer");
 const input = document.querySelector("#query");
 const sendButton = document.querySelector("#send-button");
+const graphSearchMode = document.querySelector("#graphrag-search-mode");
 const imageInput = document.querySelector("#image-input");
+const fileInput = document.querySelector("#file-input");
+const attachmentInfo = document.querySelector("#attachment-info");
 const attachmentPreview = document.querySelector("#attachment-preview");
 const attachmentImage = document.querySelector("#attachment-image");
 const attachmentName = document.querySelector("#attachment-name");
@@ -14,6 +17,7 @@ const currentConversationTitle = document.querySelector("#current-conversation-t
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const SUPPORTED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 
+let selectedDocument = null;
 let selectedImage = null;
 let selectedImageUrl = null;
 const USER_ID_KEY = "aster_user_id";
@@ -25,7 +29,7 @@ localStorage.setItem(USER_ID_KEY, userId);
 
 const routeLabels = {
   general_search: "General assistance",
-  product_search: "Product catalog",
+  file_query: "Uploaded file",
   additional_search: "Additional information needed",
   policy_search: "Policies and support",
   analytics_search: "Snowflake analytics",
@@ -47,7 +51,7 @@ function addUserMessage(text, imageFile = null) {
   if (imageFile) {
     const upload = document.createElement("span");
     upload.className = "message-meta";
-    upload.textContent = `Attached image: ${imageFile.name}`;
+    upload.textContent = `Attached file: ${imageFile.name}`;
     body.append(upload);
   }
   body.append(paragraph);
@@ -96,7 +100,7 @@ function renderWelcome() {
   suggestions.setAttribute("aria-label", "Suggested questions");
   [
     ["What can you help me with?", "What can you help me with?"],
-    ["Show me Philips Hue smart locks and their inventory.", "Find Philips Hue smart locks"],
+    ["Who supplies Philips Hue Smart Lock Max?", "Find a product supplier"],
     ["Can I return an installed smart lock?", "Ask about a return"],
     ["Which five products generated the most revenue in 2025?", "Analyze product revenue"],
     ["Summarize the recurring support themes described in the sampled Eufy Smart Speaker Essential reviews.", "GraphRAG: review themes"],
@@ -247,29 +251,16 @@ async function deleteConversation(id) {
   await loadConversations();
 }
 
-function showProducts(container, payload) {
+function showFileSources(container, payload) {
   container.replaceChildren();
-  if (!payload.products?.length) return;
-
-  const title = document.createElement("div");
-  title.className = "source-title";
-  title.textContent = `Matched records · ${payload.sources.join(", ")}`;
+  const title = document.createElement("strong");
+  title.textContent = "Uploaded file excerpts · current request only";
   container.append(title);
-
-  payload.products.slice(0, 3).forEach((product) => {
-    const card = document.createElement("div");
-    card.className = "product-card";
-    const name = document.createElement("strong");
-    name.textContent = product.product_name;
-    const price = document.createElement("strong");
-    price.textContent = `$${Number(product.unit_price).toFixed(2)}`;
-    const category = document.createElement("span");
-    category.textContent = `${product.category} · ${product.supplier}`;
-    const stock = document.createElement("span");
-    stock.textContent = `${product.units_in_stock} in stock`;
-    card.append(name, price, category, stock);
-    container.append(card);
-  });
+  for (const source of payload.documents ?? []) {
+    const row = document.createElement("p");
+    row.textContent = `[${source.source_id}] ${source.source_file} · ${source.locator}`;
+    container.append(row);
+  }
 }
 
 function showKnowledgeSources(container, payload) {
@@ -353,6 +344,11 @@ function handleEvent(eventName, payload, message) {
     GraphInspector.record(message.inspector, "Clarification guardrail", payload);
   } else if (eventName === "supervisor") {
     GraphInspector.record(message.inspector, "Supervisor", payload);
+  } else if (eventName === "graph_task") {
+    GraphInspector.record(message.inspector, "Graph task", payload);
+    if (!message.receivedDelta) message.answer.textContent = payload.stage === "started"
+      ? `${payload.task_id}: ${payload.tool} is retrieving evidence…`
+      : `${payload.task_id}: ${payload.status}. Preparing the next step…`;
   } else if (eventName === "agent") {
     GraphInspector.record(message.inspector, "Subagent", payload);
     if (!message.receivedDelta) message.answer.textContent = payload.stage === "started"
@@ -369,9 +365,10 @@ function handleEvent(eventName, payload, message) {
         : "Could not produce a validated answer.";
     }
   } else if (eventName === "sources") {
-    if (payload.backend === "snowflake") showAnalyticsRows(message.sources, payload);
+    if (payload.backend === "uploaded_file") showFileSources(message.sources, payload);
+    else if (payload.backend === "snowflake") showAnalyticsRows(message.sources, payload);
     else if (payload.documents?.length) showKnowledgeSources(message.sources, payload);
-    else showProducts(message.sources, payload);
+    else message.sources.replaceChildren();
   } else if (eventName === "delta") {
     message.answer.classList.remove("thinking");
     if (!message.receivedDelta) {
@@ -441,6 +438,9 @@ async function refreshGraphStatus() {
 }
 
 function clearAttachment() {
+  selectedDocument = null;
+  fileInput.value = "";
+  attachmentImage.hidden = false;
   selectedImage = null;
   imageInput.value = "";
   attachmentPreview.hidden = true;
@@ -464,6 +464,7 @@ function selectAttachment(file) {
 
   clearAttachment();
   selectedImage = file;
+  attachmentInfo.textContent = "Image analysis uses OpenAI";
   selectedImageUrl = URL.createObjectURL(file);
   attachmentImage.src = selectedImageUrl;
   attachmentName.textContent = file.name;
@@ -472,20 +473,37 @@ function selectAttachment(file) {
   input.focus();
 }
 
+function selectDocument(file) {
+  clearAttachment();
+  if (!/\.(txt|md|pdf)$/i.test(file.name) || !file.size || file.size > 5 * 1024 * 1024) {
+    window.alert("Choose a nonempty TXT, Markdown or text-based PDF file, at most 5 MB.");
+    return;
+  }
+  selectedDocument = file;
+  attachmentImage.hidden = true;
+  attachmentName.textContent = file.name;
+  attachmentInfo.textContent = "Sent to the configured model. Reattach for follow-ups; no shared indexing.";
+  attachmentPreview.hidden = false;
+  input.placeholder = "What would you like to know about this file?";
+  input.focus();
+}
+
 async function sendQuery(query) {
+  const searchMode = graphSearchMode.value;
   const imageFile = selectedImage;
-  const text = query.trim() || (imageFile ? "What is in this image?" : "");
+  const documentFile = selectedDocument;
+  const text = query.trim() || (imageFile ? "What is in this image?" : documentFile ? "Summarize this file." : "");
   if (!text || sendButton.disabled) return;
   const isNewConversation = !conversationId;
   if (isNewConversation) currentConversationTitle.textContent = text.slice(0, 80);
 
   document.querySelector(".suggestions")?.remove();
-  addUserMessage(text, imageFile);
+  addUserMessage(text, imageFile ?? documentFile);
   const message = addAssistantMessage();
   input.value = "";
   input.style.height = "auto";
   clearAttachment();
-  input.placeholder = "Ask about products, inventory, or anything else…";
+  input.placeholder = "Ask about policies, product relationships, reviews, or sales…";
   sendButton.disabled = true;
   newConversationButton.disabled = true;
   refreshConversationsButton.disabled = true;
@@ -493,12 +511,14 @@ async function sendQuery(query) {
 
   try {
     let response;
-    if (imageFile) {
+    if (imageFile || documentFile) {
       const formData = new FormData();
       formData.append("query", text);
+      formData.append("graphrag_search_mode", searchMode);
       formData.append("user_id", userId);
       if (conversationId) formData.append("conversation_id", conversationId);
-      formData.append("image", imageFile);
+      if (imageFile) formData.append("image", imageFile);
+      if (documentFile) formData.append("file", documentFile);
       response = await fetch("/api/assistant", {
         method: "POST",
         body: formData,
@@ -511,19 +531,21 @@ async function sendQuery(query) {
           query: text,
           user_id: userId,
           conversation_id: conversationId,
+          graphrag_search_mode: searchMode,
         }),
       });
     }
     if (!response.ok || !response.body) {
-      const detail = await response.text();
-      throw new Error(detail || `Request failed with ${response.status}`);
+      const errorBody = await response.json().catch(() => ({}));
+      const detail = typeof errorBody.detail === "string" ? errorBody.detail : `Request failed with ${response.status}`;
+      throw new Error(detail);
     }
     await readEventStream(response, message);
     await loadConversations();
   } catch (error) {
     message.answer.classList.remove("thinking");
     message.answer.classList.add("error-text");
-    message.answer.textContent = "I could not reach the assistant. Confirm that the API and model are running.";
+    message.answer.textContent = error.message || "The assistant request failed.";
     console.error(error);
   } finally {
     sendButton.disabled = false;
@@ -581,9 +603,14 @@ imageInput.addEventListener("change", () => {
   if (file) selectAttachment(file);
 });
 
+fileInput.addEventListener("change", () => {
+  const [file] = fileInput.files ?? [];
+  if (file) selectDocument(file);
+});
+
 removeAttachmentButton.addEventListener("click", () => {
   clearAttachment();
-  input.placeholder = "Ask about products, inventory, or anything else…";
+  input.placeholder = "Ask about policies, product relationships, reviews, or sales…";
 });
 
 loadConversations({ restoreActive: true });

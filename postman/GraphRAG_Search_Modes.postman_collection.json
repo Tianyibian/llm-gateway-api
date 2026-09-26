@@ -1,0 +1,80 @@
+{
+  "info": {
+    "name": "Smart AI Support - Local vs Global GraphRAG",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Local Search (default, field omitted)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/graphrag/query",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Summarize recurring support themes in the sampled smart-home product reviews.\"\n}"
+        },
+        "description": "Real model and verified Microsoft GraphRAG index; no conversation is saved. May take several minutes."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const data = pm.response.json();",
+              "pm.test('Completed with evidence', () => { pm.expect(data.status).to.eql('complete'); pm.expect(data.evidence.length).to.be.above(0); });",
+              "pm.test('Only local retrieval ran', () => { pm.expect(data.trace.length).to.be.above(0); data.trace.forEach(step => pm.expect(step.tool).to.eql('ms_local_search')); });",
+              "pm.test('Answer is present', () => pm.expect(data.answer).to.be.a('string').and.not.empty);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Global Search (explicit)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/graphrag/query",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Summarize recurring support themes in the sampled smart-home product reviews.\",\n  \"graphrag_search_mode\": \"global\"\n}"
+        },
+        "description": "Real model and verified Microsoft GraphRAG index; no conversation is saved. May take several minutes."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const data = pm.response.json();",
+              "pm.test('Completed with evidence', () => { pm.expect(data.status).to.eql('complete'); pm.expect(data.evidence.length).to.be.above(0); });",
+              "pm.test('Only global retrieval ran', () => { pm.expect(data.trace.length).to.be.above(0); data.trace.forEach(step => pm.expect(step.tool).to.eql('ms_global_search')); });",
+              "pm.test('Answer is present', () => pm.expect(data.answer).to.be.a('string').and.not.empty);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

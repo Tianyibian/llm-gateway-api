@@ -1,14 +1,16 @@
 /* Render only server-reported events. Never interpret evidence as HTML. */
 (function (root) {
   const workers = {
+    predefined_cypher: "Predefined Cypher tool",
+    text_to_cypher: "Text-to-Cypher tool",
     ms_local_search: "Microsoft Local Search worker",
     ms_global_search: "Microsoft Global Search worker",
     ms_drift_search: "Microsoft DRIFT Search worker",
     neo4j_relationships: "Neo4j relationship worker",
   };
   const branches = {
+    file_query: "Uploaded file branch",
     general_search: "General assistant",
-    product_search: "Product catalog branch",
     additional_search: "Clarification branch",
     policy_search: "Policy and support RAG branch",
     analytics_search: "Snowflake analytics branch",
@@ -46,6 +48,9 @@
         ? "Waiting for the graph branch result. No retrieval worker has been reported yet."
         : "This route does not use the GraphRAG supervisor.", "execution-note"));
       section.append(element("p", `Selected: ${payload.route}`));
+      if (payload.route === "graph_rag_search" && payload.graphrag_search_mode) {
+        section.append(element("p", `Microsoft search mode: ${payload.graphrag_search_mode} (requested; actual calls appear below)`));
+      }
       if (payload.reason) section.append(element("p", payload.reason, "execution-note"));
     } else if (name === "Guardrail") {
       inspector.overview.hidden = false;
@@ -61,6 +66,11 @@
       section.append(element("p", `Decision: ${payload.action}`));
       if ((payload.missing ?? []).length) section.append(element("p", `Missing: ${payload.missing.join(", ")}`));
       if (payload.action !== "ready") section.append(element("p", "No retrieval tools were started."));
+    } else if (name === "Graph task") {
+      section.append(element("p", `${payload.task_id} · ${workers[payload.tool] ?? payload.tool} · ${payload.stage}`));
+      if (payload.question) section.append(element("p", payload.question));
+      if (payload.parent_evidence_ids) section.append(element("p", `Depends on: ${payload.parent_evidence_ids.join(", ") || "original question"}`));
+      if (payload.status) section.append(element("p", `Status: ${payload.status}${payload.error ? ` · ${payload.error}` : ""}`));
     } else if (name === "Subagent") {
       section.append(element("p", `${payload.agent_run_id} · ${payload.agent} · ${payload.stage}`));
       if (payload.question) section.append(element("p", payload.question));

@@ -1,15 +1,16 @@
 # GraphRAG scope guardrail and backend selection
 
-Production now uses a [two-level business supervisor and specialist agents](hierarchical-agents.md).
+Production uses a [direct task planner](graph-task-planner.md).
 The root scope-only gate permits supported cross-backend composite questions but
 does not grant tool capabilities. The backend-selection checks below remain
-mandatory inside each specialist before individual tool calls.
+mandatory for every proposed subtask before individual tool calls.
 
 ## Current implementation
 
 The assistant's `graph_rag_search` branch now contains a LangGraph subgraph
 with a semantic scope gate. Other assistant branches do not use this gate.
-An LLM selects either `neo4j` or `microsoft_graphrag` using three inputs:
+The root gate assesses scope only. For each planned retrieval task, a stricter
+guard selects either `neo4j` or `microsoft_graphrag` using three inputs:
 
 1. A server-owned, read-only business scope definition.
 2. An approved domain schema and backend capability descriptions.
@@ -187,17 +188,17 @@ Existing classifier
   -> GraphRAG branch
      -> scope guardrail
         -> decompose business goals
-           -> delegate independent specialist agents
-              -> each agent plans, validates and calls its own tools
-                 -> merge evidence / plan dependent assignments
+           -> validate and dispatch independent tool tasks
+              -> predefined Cypher / Text-to-Cypher / Microsoft GraphRAG
+                 -> merge evidence / plan dependent tasks
                     -> parallel evidence maps -> grounded reduce -> cited answer
 ```
 
-The business supervisor uses `DelegationPlan` to choose specialist agents.
-Each specialist independently uses `GraphPlan` to choose its allowed retrieval
-tools based on its assigned question and returned evidence. Both levels use
+The planner uses `GraphPlan` to choose registered retrieval tools for focused
+subquestions, based on the original question and returned evidence. It uses
 LangGraph conditional edges and bounded `asyncio.gather` execution, not arbitrary
-model-generated code or an agent for every sentence.
+model-generated code or an agent for every sentence. Independent tasks may run
+in the first round; prerequisite-dependent tasks wait for real results.
 Dependent tasks run in later rounds. There are no runtime-generated arbitrary
 tools, SQL, Cypher, or executable code.
 
@@ -215,7 +216,7 @@ planner/tool timeout, and a 120-second supervisor timeout. There can be at most
 scope check. The initial guardrail has its own configured timeout. Provider
 retries and internal DRIFT operations are not individual retrieval calls in this
 counter; real adapters must impose their own internal request/token budgets.
-The application factory uses 90-second call and 300-second total supervisor
+The application factory uses 90-second call and 480-second total supervisor
 limits for the optional real adapter. Its worker separately limits DRIFT to one
 follow-up at one depth and applies a 90-second query deadline. These time and
 context limits are not an exact dollar-spend cap.

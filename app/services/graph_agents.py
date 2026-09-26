@@ -1,4 +1,4 @@
-"""A business supervisor delegates goals to independently executing specialist graphs."""
+"""Legacy specialist hierarchy; active factories use the direct GraphRAG task planner."""
 from __future__ import annotations
 
 import asyncio
@@ -108,6 +108,14 @@ Return only DelegationPlan. Answers are synthesized later with MapReduce.
 
     def _has_workers(self):
         return bool(self.agents)
+
+    def with_search_mode(self, mode: str = "local"):
+        if mode not in {"local", "global"}:
+            raise ValueError("Unsupported Microsoft GraphRAG search mode")
+        agents = {role: SpecialistAgent(role=role, engine=agent.engine.with_search_mode(mode))
+                  for role, agent in self.agents.items()}
+        return HierarchicalGraphSupervisor(chain=self._chain, guardrail=self.guardrail,
+            agents=agents, limits=self.limits, answer_generator=self.answer_generator)
 
     @staticmethod
     def _progress(**payload):

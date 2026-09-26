@@ -13,7 +13,6 @@ from app.models.graphrag import GraphGuardrailRequest
 from app.models.schemas import QueryRoute
 from app.services.assistant_service import AssistantGraphService
 from app.services.graphrag_guardrail import GraphRAGGuardrail
-from app.services.product_catalog import ProductCatalog
 
 
 QUESTION = "Who supplies Philips Hue Smart Lock Max?"
@@ -79,7 +78,7 @@ def test_named_product_review_themes_use_local_document_context():
         "entity_types": ["Product", "SupportTopic"],
         "required_relations": [{"source_type": "Product", "relation": "HAS_TOPIC", "target_type": "SupportTopic"}]},
         query="Summarize support themes in Philips Hue Smart Lock Max reviews")
-    assert decision.action == "allow" and decision.eligible_tools == ["local_search"]
+    assert decision.action == "allow" and decision.eligible_tools == ["local_search", "global_search"]
 
 
 def test_scope_only_gate_accepts_supported_cross_backend_composition_without_granting_tools():
@@ -227,7 +226,7 @@ def test_prompt_renders_with_untrusted_question_in_separate_human_message():
 
 
 @pytest.mark.parametrize("intent,modes", [
-    ("corpus_summary", ["global"]), ("exploratory", ["local", "drift"]),
+    ("corpus_summary", ["local", "global"]), ("exploratory", ["local", "global", "drift"]),
 ])
 def test_broad_microsoft_graphrag_questions_need_no_named_entity(intent, modes):
     result = {**ASSESSMENT, "intent": intent, "entity_mentions": [], "required_relations": [],
@@ -240,7 +239,7 @@ def test_broad_microsoft_graphrag_questions_need_no_named_entity(intent, modes):
 def test_microsoft_local_search_is_a_separate_capability():
     decision = evaluate({**ASSESSMENT, "backend": "microsoft_graphrag"})
     assert decision.backend == "microsoft_graphrag"
-    assert decision.eligible_tools == ["local_search"]
+    assert decision.eligible_tools == ["local_search", "global_search"]
 
 
 def test_neo4j_cannot_serve_community_report_requests():
@@ -348,7 +347,6 @@ def test_only_graphrag_branch_uses_guardrail(route):
     chain = AssessmentChain()
     service = AssistantGraphService.from_model(
         classifier=Classifier(), model_client=FakeListChatModel(responses=["General answer"]),
-        product_catalog=ProductCatalog("Business_data"),
         graph_guardrail=GraphRAGGuardrail(chain=chain), provider="fake", model="fake",
     )
 

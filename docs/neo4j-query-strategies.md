@@ -6,8 +6,13 @@ transaction totals.
 
 ## Execution flow
 
-Router → graph scope guardrail → business supervisor → catalog/sales specialist
-→ Neo4j tool → strategy selector
+Both tools now use an internal [validated LangGraph subgraph](cypher-subgraph.md).
+Dynamic generation and fixed-template compilation converge on mandatory
+`validate_cypher` before `execute_cypher`. The executor also checks a read-only
+EXPLAIN plan at its own execution boundary.
+
+Router → graph scope guardrail → task decomposition planner
+→ explicit predefined Cypher or Text-to-Cypher tool
 → template OR structured query compiler → semantic review → EXPLAIN → Neo4j
 → evidence → parallel Map → Reduce → citation validation → final answer.
 
@@ -55,9 +60,11 @@ For live chat/SSE/persistence and final monthly-revenue comparisons, start the a
 and run `python -m app.cli.evaluate_graph_answers --include-microsoft`. This uses
 real model calls, requires both indexes, and saves isolated test conversations.
 
-A template is selected only when it covers the whole question. A template miss
-selects the dynamic path; invalid arguments, timeouts and database failures do
-not trigger another strategy or backend. Selection uses a model call; templates
+A template is selected only when it covers the whole question. In the legacy
+automatic adapter a template miss selects the dynamic path. The active task
+planner instead selects `predefined_cypher` or `text_to_cypher` explicitly; a
+template-only call never silently switches strategy. Invalid arguments, timeouts
+and database failures do not trigger another strategy or backend. Selection uses a model call; templates
 avoid the additional dynamic-plan generation call, not all model calls.
 
 | Template | Semantics |
@@ -108,7 +115,7 @@ Uniqueness constraints protect concurrent imports. This is not a live ERP feed.
 ## Local setup
 
 ```bash
-.venv-langchain/bin/python -m pip install -r requirements-neo4j.txt
+.venv-langchain/bin/python -m pip install -r requirements/neo4j.txt
 .venv-langchain/bin/python -m app.cli.prepare_neo4j
 NEO4J_READ_ONLY=false docker compose --env-file .env.neo4j -f compose.neo4j.yaml up -d
 # Wait for Neo4j to accept connections; validate without writes first:

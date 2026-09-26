@@ -38,14 +38,13 @@ def test_unsupported_analytics_does_not_call_database_or_answer_model():
     from langchain_core.language_models.fake_chat_models import FakeListChatModel
     from app.models.schemas import QueryClassification
     from app.services.assistant_service import AssistantGraphService
-    from app.services.product_catalog import ProductCatalog
     classifier = AsyncMock()
     classifier.classify.return_value = QueryClassification(route="analytics_search", reason="Report", confidence=1)
     planner = AsyncMock()
     planner.plan.return_value = None
     database = AsyncMock()
     service = AssistantGraphService.from_model(classifier=classifier,
-        model_client=FakeListChatModel(responses=["Must not use this answer"]), product_catalog=ProductCatalog("Business_data"),
+        model_client=FakeListChatModel(responses=["Must not use this answer"]),
         analytics_planner=planner, analytics_service=database, provider="fake", model="fake")
     async def run():
         return [item async for item in service.stream("Only supplier Acme's sales")]

@@ -29,6 +29,9 @@ Server-Sent Event stream, whether the tokens come from the **OpenAI API** or a
 written to a relational database, so a client can resume a thread by ID instead
 of replaying history on every request.
 
+New to the codebase? Start with the [project map and reading order](docs/project-map.md).
+Operational guides are indexed in [docs/README.md](docs/README.md).
+
 ## Tech stack
 
 **Generative AI:** Retrieval-Augmented Generation (RAG), LangChain, LangGraph,
@@ -58,7 +61,7 @@ multimodal image understanding, pytest, Postman, and idempotent data ingestion.
 | **LangGraph assistant** | Classifies each query, follows a conditional graph branch, and streams a grounded answer with visible route and source metadata. |
 | **Knowledge Base RAG** | Loads CSV, HTML, PDF, and DOCX sources, creates local or OpenAI embeddings, retrieves with pgvector HNSW search, and returns citations. |
 | **Snowflake analytics** | Routes aggregate business questions through a structured plan and allowlisted SQL templates, then grounds the answer in warehouse rows. |
-| **Hierarchical GraphRAG agents** | A business supervisor delegates catalog, sales and review goals to specialist LangGraphs that independently select allowed Neo4j or Microsoft GraphRAG tools. Includes bounded calls, dependencies and evidence lineage. See [architecture](docs/hierarchical-agents.md). |
+| **GraphRAG task planning** | A guarded LangGraph planner decomposes business queries into subtasks and directly dispatches predefined Cypher, constrained Text-to-Cypher and Microsoft GraphRAG tools. Includes bounded parallelism, evidence-driven dependencies and final MapReduce synthesis. See [architecture](docs/graph-task-planner.md). |
 | **Checked graph answers** | Schema-constrained Cypher, independent question-alignment review and Neo4j EXPLAIN preflight; parallel evidence mapping, answer reduction and source-ID validation produce a cited natural-language answer. |
 | **Image understanding** | Validates an uploaded image locally, then streams analysis from OpenAI vision without persisting the upload. |
 | **Stateful conversations** | Server-side history: send only the new user turn and the service prepends stored context. |
@@ -114,7 +117,7 @@ adapter patterns.
 |---|---|---|
 | `POST` | `/api/chat` | Stateful multi-turn conversation. Returns a `conversation_id`; reuse it and send only the new turn. |
 | `POST` | `/api/reason` | Stateless reasoning-oriented response — a reasoned final answer plus a concise explanation (not hidden chain of thought). |
-| `POST` | `/api/classify` | Structured routing: `general_search`, `product_search`, `policy_search`, `additional_search`, `analytics_search`, or `graph_rag_search`. |
+| `POST` | `/api/classify` | Structured routing: `general_search`, `file_query`, `policy_search`, `additional_search`, `analytics_search`, or `graph_rag_search`. |
 | `POST` | `/api/graphrag/guardrail` | Model-backed scope assessment and backend recommendation; no graph retrieval or conversation writes. |
 | `GET` | `/api/graphrag/status` | Inspect verified Microsoft GraphRAG index readiness and available search modes. |
 | `POST` | `/api/graphrag/query` | Guarded adaptive supervisor with real Microsoft GraphRAG evidence; unavailable adapters fail explicitly. |
@@ -159,7 +162,7 @@ documents the independent graph database, transactional snapshot and two query p
 
 ```bash
 python3.13 -m venv .venv-langchain && source .venv-langchain/bin/activate
-python -m pip install -r requirements-langchain.txt
+python -m pip install -r requirements/langchain.txt
 
 cp .env.example .env          # then set LLM_PROVIDER (and a key, if using OpenAI)
 docker compose up -d postgres  # start PostgreSQL 17 on localhost:5432
@@ -237,7 +240,7 @@ uses the Python 3.13 `.venv-langchain` environment for application development:
 ```bash
 python3.13 -m venv .venv-langchain
 source .venv-langchain/bin/activate
-python -m pip install -r requirements-langchain.txt
+python -m pip install -r requirements/langchain.txt
 ```
 
 Then set these values in the local `.env` and restart Uvicorn:
@@ -261,6 +264,9 @@ curl -X POST http://127.0.0.1:8000/api/classify \
   -d '{"query":"Can I return a smart lock after installation?"}'
 ```
 
+See [Local vs Global Search](docs/local-global-search.md) for the review search
+selector: Local is the default; Global is an explicit per-request choice.
+
 ### LangGraph assistant
 
 The browser UI and `/api/assistant` use a compiled `StateGraph`:
@@ -269,10 +275,12 @@ The browser UI and `/api/assistant` use a compiled `StateGraph`:
 START -> detect_modality
               |
               +-> vision_answer (OpenAI) ------------> END
+              +-> prepare_file -> file_answer --------> END
               +-> classify_query
                         |
                         +-> general_answer ---------------------> END
-                        +-> search_products -> product_answer -> END
+                        +-> clarify_request -> next route or END
+                        +-> prepare_file -> attachment reminder -> END
                         +-> retrieve_knowledge -> knowledge_answer -> END
                         +-> graph_rag -> scope gate -> supervisor -> END
                         +-> plan_analytics -> query_snowflake
@@ -281,23 +289,22 @@ START -> detect_modality
 
 The graph has separate input, output, and overall state schemas. Every node
 returns only its state update. The conditional edge reads `state["route"]` and
-selects the next node. Product search joins the local products, categories, and
-suppliers CSV files in memory, then supplies only the best matching records to
-the model. SSE events expose `metadata`, `route`, optional `sources`, real model
+selects the next node. Catalog relationships are handled by the guarded GraphRAG
+branch and its Neo4j retrieval tools, not an independent CSV search. SSE events expose `metadata`, `route`, optional `sources`, real model
 `delta` tokens, and `done`. Before execution, the endpoint loads the owned
 conversation history from PostgreSQL. After a successful stream, it atomically
 saves the user query and complete assistant answer as one turn.
 
-The CSV search is intentionally a local demonstration implementation. In a
-production system, exact prices, stock, and availability should come from the
-transactional product service or PostgreSQL rather than embeddings or static
-files. PostgreSQL full-text search or trigram indexes work well for catalog
-names; OpenSearch/Elasticsearch becomes useful for larger faceted catalogs.
-Use pgvector or another vector index for semantic descriptions and support
-documents, while preserving relational filters and source/version metadata.
-Policies belong in a versioned RAG knowledge pipeline with citations. A hybrid
-router can therefore send exact business facts to SQL/service APIs and
-unstructured policy questions to retrieval.
+The independent CSV product lookup has been removed. Current product prices,
+inventory, specifications and compatibility are not supported by the graph tools;
+those requests go to GraphRAG scope assessment and must be declined rather than
+answered from general model knowledge. `Business_data/` remains the source for
+Neo4j ingestion, Microsoft GraphRAG preparation and analytics comparisons.
+Policy documents still use the pgvector Knowledge Base retrieval path. Images
+use the vision branch. The separate `file_query` branch supports request-scoped
+TXT, Markdown and text-based PDF questions with excerpt/page citations. Files
+are not added to shared indexes; reattach for follow-ups. See the
+[file-query guide](docs/file-query.md) for limits, privacy and live test steps.
 
 ### Snowflake business analytics
 
@@ -324,7 +331,7 @@ Set up a development account in this order:
 2. Install the optional driver:
 
    ```bash
-   python -m pip install -r requirements-snowflake.txt
+   python -m pip install -r requirements/snowflake.txt
    ```
 
 3. Follow [Snowflake authentication](docs/snowflake-authentication.md) to prepare
@@ -518,36 +525,40 @@ integration.
 ## Project layout
 
 ```
-app/
-├── api/routes.py                 # LLM endpoints + SSE
-├── api/conversation_routes.py    # conversation CRUD
-├── core/config.py                # environment configuration
-├── db/models.py                  # conversation, message, vector tables
-├── db/session.py                 # async engine & session factory
-├── models/schemas.py             # Pydantic request & response schemas
-├── services/base.py              # abstract service + service types
-├── services/factory.py           # provider × service-type factory
-├── services/langchain_service.py # optional LangChain adapter
-├── services/openai_service.py    # OpenAI adapter
-├── services/ollama_service.py    # Ollama streaming adapter
-├── services/query_classifier.py # prompt + structured-output routing
-├── services/assistant_service.py # StateGraph + conditional branches
-├── services/product_catalog.py   # local CSV search adapter
-├── services/knowledge_loader.py  # CSV / HTML / PDF / DOCX loaders
-├── services/embedding_service.py # Ollama / OpenAI embedding adapters
-├── services/knowledge_service.py # ingestion + pgvector retrieval
-├── services/vision_service.py   # OpenAI Responses image analysis
-├── services/conversation_service.py
-├── cli/ingest_knowledge.py       # idempotent indexing command
-├── static/                       # local assistant web interface
-└── main.py
-compose.yaml                      # local PostgreSQL 17 service
-migrations/                       # Alembic revisions
-scripts/                          # SQLite-to-PostgreSQL data migration
-tests/                            # deterministic provider + temp SQLite
-postman/                          # live end-to-end collection
-requirements-langchain.txt        # optional LangChain dependency set
+app/                             # Application code; start with main.py
+├── api/                         # HTTP endpoints and conversation CRUD
+├── core/                        # Environment-backed configuration
+├── db/                          # ORM models, sessions and connection pool
+├── models/                      # Validated request, plan and evidence contracts
+├── services/                    # Routing, agents, retrieval and model adapters
+├── cli/                         # Ingestion, diagnostics and evaluation commands
+└── static/                      # Browser chat UI and execution inspector
+graphrag_runtime/                # Isolated Microsoft GraphRAG worker and templates
+third_party/                     # Official GraphRAG source, pinned as a Git submodule
+Business_data/                   # Synthetic source CSVs (paths preserved)
+Knowledge Base/                  # Source documents for policy/support RAG
+migrations/                     # Alembic database revisions
+requirements/                   # Optional dependency sets; GraphRAG is isolated
+requirements.txt                # Base app dependencies; Docker/CI entry point
+notebooks/                      # Exploration notebooks, separate from app code
+scripts/                        # Migration utilities
+└── reference/                   # Legacy preprocessing reference
+tests/                          # Automated backend and frontend tests
+postman/                        # Live API test collections
+docs/                           # Architecture, setup and testing guides
+snowflake/                      # Optional warehouse SQL setup
+compose.yaml                    # Default local PostgreSQL service
+compose.neo4j.yaml               # Explicit opt-in Neo4j stack
+docker-compose.yml              # Alternative API + PostgreSQL stack; use -f
+Dockerfile                      # Application image build
+.local/                         # Ignored local indexes and diagnostics
 ```
+
+Run application and setup commands from the repository root. Existing data,
+virtual environments, local indexes and secrets have not moved. The optional
+dependency files previously named `requirements-*.txt` now live in `requirements/`.
+Do not run both PostgreSQL Compose stacks against the same port; use an explicit
+`-f` when selecting the alternative stack, and preserve its existing data volume.
 
 ---
 

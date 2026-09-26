@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 
-from app.models.graphrag import GraphGuardrailDecision, GraphGuardrailRequest
+from app.models.graphrag import GraphGuardrailDecision, GraphGuardrailRequest, GraphQueryRequest
 from app.services.errors import LLMConfigurationError
 from app.services.factory import LLMServiceFactory
 from app.services.graphrag_guardrail import GraphRAGGuardrail
@@ -41,10 +41,10 @@ def get_graph_supervisor() -> GraphRAGSupervisor:
 @router.post("/query", response_model=SupervisorResult,
              summary="Run the guarded, bounded GraphRAG supervisor")
 async def run_graph_query(
-    request: GraphGuardrailRequest, response: Response,
+    request: GraphQueryRequest, response: Response,
     service: GraphRAGSupervisor = Depends(get_graph_supervisor),
 ) -> SupervisorResult:
-    result = await service.run(request.query)
+    result = await service.with_search_mode(request.graphrag_search_mode).run(request.query)
     if result.status == "unavailable":
         response.status_code = 503
     return result

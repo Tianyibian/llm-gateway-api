@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 import pytest
@@ -14,7 +13,6 @@ from app.models.schemas import (
 )
 from app.services.assistant_service import AssistantGraphService
 from app.services.knowledge_service import RetrievedKnowledge
-from app.services.product_catalog import ProductCatalog, ProductRecord
 from app.services.snowflake_analytics import AnalyticsResult
 
 
@@ -90,50 +88,6 @@ class FakeAnalyticsService:
         )
 
 
-def test_product_catalog_finds_and_enriches_matching_rows() -> None:
-    catalog = ProductCatalog(PROJECT_ROOT / "Business_data")
-
-    matches = catalog.search("Show me Philips Hue smart locks and inventory")
-
-    assert matches
-    assert matches[0].product_name == "Philips Hue Smart Lock Max"
-    assert matches[0].category == "Smart Lock"
-    assert matches[0].supplier == "Philips Hue"
-    assert matches[0].units_in_stock == 615
-
-
-def test_product_record_is_immutable() -> None:
-    record = ProductRecord(
-        product_id=1,
-        product_name="Example",
-        category="Category",
-        supplier="Supplier",
-        quantity_per_unit="1 unit",
-        unit_price=1.0,
-        units_in_stock=1,
-        units_on_order=0,
-        discontinued=False,
-    )
-
-    with pytest.raises(FrozenInstanceError):
-        record.product_name = "Changed"  # type: ignore[misc]
-
-
-def test_product_record_rejects_positional_arguments() -> None:
-    with pytest.raises(TypeError):
-        ProductRecord(  # type: ignore[misc]
-            1,
-            "Example",
-            "Category",
-            "Supplier",
-            "1 unit",
-            1.0,
-            1,
-            0,
-            False,
-        )
-
-
 def test_general_graph_streams_model_output() -> None:
     fake_module = pytest.importorskip("langchain_core.language_models.fake_chat_models")
 
@@ -142,7 +96,6 @@ def test_general_graph_streams_model_output() -> None:
         service = AssistantGraphService.from_model(
             classifier=FakeClassifier(QueryRoute.GENERAL_SEARCH),
             model_client=model,
-            product_catalog=ProductCatalog(PROJECT_ROOT / "Business_data"),
             provider="fake",
             model="fake-model",
         )
@@ -158,38 +111,6 @@ def test_general_graph_streams_model_output() -> None:
     asyncio.run(scenario())
 
 
-def test_product_graph_emits_grounding_records() -> None:
-    fake_module = pytest.importorskip("langchain_core.language_models.fake_chat_models")
-
-    async def scenario() -> None:
-        model = fake_module.FakeListChatModel(responses=["A grounded product answer."])
-        service = AssistantGraphService.from_model(
-            classifier=FakeClassifier(QueryRoute.PRODUCT_SEARCH),
-            model_client=model,
-            product_catalog=ProductCatalog(PROJECT_ROOT / "Business_data"),
-            provider="fake",
-            model="fake-model",
-        )
-
-        events = [
-            event
-            async for event in service.stream(
-                "Show me Philips Hue smart locks and inventory."
-            )
-        ]
-
-        source_event = next(payload for name, payload in events if name == "sources")
-        assert source_event["sources"] == ["Business_data/Products.csv"]
-        assert source_event["products"][0]["product_name"] == (
-            "Philips Hue Smart Lock Max"
-        )
-        assert "".join(
-            payload["content"] for name, payload in events if name == "delta"
-        ) == "A grounded product answer."
-
-    asyncio.run(scenario())
-
-
 def test_return_graph_retrieves_knowledge_and_emits_citations() -> None:
     fake_module = pytest.importorskip("langchain_core.language_models.fake_chat_models")
 
@@ -200,7 +121,6 @@ def test_return_graph_retrieves_knowledge_and_emits_citations() -> None:
         service = AssistantGraphService.from_model(
             classifier=FakeClassifier(QueryRoute.POLICY_SEARCH),
             model_client=model,
-            product_catalog=ProductCatalog(PROJECT_ROOT / "Business_data"),
             knowledge_retriever=FakeKnowledgeRetriever(),  # type: ignore[arg-type]
             provider="fake",
             model="fake-model",
@@ -228,7 +148,6 @@ def test_vision_is_a_streaming_langgraph_branch() -> None:
         service = AssistantGraphService.from_model(
             classifier=FakeClassifier(QueryRoute.GENERAL_SEARCH),
             model_client=model,
-            product_catalog=ProductCatalog(PROJECT_ROOT / "Business_data"),
             vision_service=FakeVisionService(),
             provider="fake",
             model="fake-model",
@@ -262,7 +181,6 @@ def test_analytics_graph_emits_snowflake_grounding_records() -> None:
         service = AssistantGraphService.from_model(
             classifier=FakeClassifier(QueryRoute.ANALYTICS_SEARCH),
             model_client=model,
-            product_catalog=ProductCatalog(PROJECT_ROOT / "Business_data"),
             analytics_planner=FakeAnalyticsPlanner(),  # type: ignore[arg-type]
             analytics_service=FakeAnalyticsService(),  # type: ignore[arg-type]
             provider="fake",
@@ -315,7 +233,6 @@ def test_real_nested_graph_forwards_map_reduce_progress_once():
     assistant = AssistantGraphService.from_model(
         classifier=FakeClassifier(QueryRoute.GRAPH_RAG_SEARCH),
         model_client=fake_module.FakeListChatModel(responses=["unused"]),
-        product_catalog=ProductCatalog(PROJECT_ROOT / "Business_data"),
         graph_guardrail=supervisor.guardrail, graph_supervisor=supervisor,
         provider="test", model="test",
     )

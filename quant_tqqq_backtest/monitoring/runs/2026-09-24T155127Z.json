@@ -1,0 +1,446 @@
+{
+  "schema_version": 1,
+  "automation_id": "automation-2",
+  "run_id": "2026-09-24T155127Z",
+  "trigger_at": "2026-09-24T15:51:27.434Z",
+  "started_at": "2026-09-24T16:36:28Z",
+  "completed_at": "2026-09-25T02:46:40Z",
+  "timezone": "America/New_York",
+  "scope": [
+    "ADBE",
+    "MELI"
+  ],
+  "clock_observations": [
+    {
+      "utc": "2026-09-24T16:36:28Z",
+      "new_york": "2026-09-24T12:36:28-04:00"
+    },
+    {
+      "utc": "2026-09-24T16:36:38Z",
+      "new_york": "2026-09-24T12:36:38-04:00"
+    },
+    {
+      "utc": "2026-09-24T21:41:49Z",
+      "new_york": "2026-09-24T17:41:49-04:00"
+    },
+    {
+      "utc": "2026-09-25T02:46:40Z",
+      "new_york": "2026-09-24T22:46:40-04:00"
+    }
+  ],
+  "calendar": {
+    "date": "2026-09-24",
+    "trading_day": true,
+    "early_close": false,
+    "regular_open": "09:30",
+    "regular_close": "16:00",
+    "source_id": "nyse-calendar",
+    "source_url": "https://www.nyse.com/trade/hours-calendars",
+    "checked_at": "2026-09-24T16:36:28Z"
+  },
+  "previous_successful_run_at": "2026-09-24T13:39:45Z",
+  "news_review_from": "2026-09-24T13:36:12Z",
+  "successful_watermarks_advanced": false,
+  "initial_quotes": {
+    "results": [
+      {
+        "quote": {
+          "symbol": "ADBE",
+          "last_trade_price": "238.410000",
+          "venue_last_trade_time": "2026-09-24T16:36:26.209096273Z",
+          "last_non_reg_trade_price": null,
+          "venue_last_non_reg_trade_time": null,
+          "adjusted_previous_close": "240.690000",
+          "previous_close": "240.690000",
+          "previous_close_date": "2026-09-23",
+          "bid_price": "238.380000",
+          "venue_bid_time": "2026-09-24T16:36:34.527375831Z",
+          "ask_price": "238.500000",
+          "venue_ask_time": "2026-09-24T16:36:34.527375831Z",
+          "has_traded": true,
+          "state": "active"
+        },
+        "close": {
+          "symbol": "ADBE",
+          "date": "2026-09-23",
+          "price": "240.69",
+          "interpolated": false,
+          "source": "sip-list-exchange-close"
+        }
+      },
+      {
+        "quote": {
+          "symbol": "MELI",
+          "last_trade_price": "1775.750000",
+          "venue_last_trade_time": "2026-09-24T16:36:32.590510435Z",
+          "last_non_reg_trade_price": null,
+          "venue_last_non_reg_trade_time": null,
+          "adjusted_previous_close": "1799.240000",
+          "previous_close": "1799.240000",
+          "previous_close_date": "2026-09-23",
+          "bid_price": "1775.000000",
+          "venue_bid_time": "2026-09-24T16:36:32.630789592Z",
+          "ask_price": "1776.760000",
+          "venue_ask_time": "2026-09-24T16:36:32.630789592Z",
+          "has_traded": true,
+          "state": "active"
+        },
+        "close": {
+          "symbol": "MELI",
+          "date": "2026-09-23",
+          "price": "1799.24",
+          "interpolated": false,
+          "source": "sip-list-exchange-close"
+        }
+      }
+    ]
+  },
+  "initial_quote_validation": [
+    {
+      "symbol": "ADBE",
+      "price": 238.41,
+      "trade_time": "2026-09-24T16:36:26.209096273Z",
+      "age_seconds": 11.791,
+      "checked_at": "2026-09-24T16:36:38Z",
+      "adjusted_previous_close": 240.69,
+      "previous_close_date": "2026-09-23",
+      "official_close": {
+        "symbol": "ADBE",
+        "date": "2026-09-23",
+        "price": "240.69",
+        "interpolated": false,
+        "source": "sip-list-exchange-close"
+      },
+      "state": "active",
+      "has_traded": true,
+      "daily_change_pct": -0.9472765798329785,
+      "valid_at_initial_check": true,
+      "breached_daily_observation_threshold_at_initial_check": false
+    },
+    {
+      "symbol": "MELI",
+      "price": 1775.75,
+      "trade_time": "2026-09-24T16:36:32.590510435Z",
+      "age_seconds": 5.41,
+      "checked_at": "2026-09-24T16:36:38Z",
+      "adjusted_previous_close": 1799.24,
+      "previous_close_date": "2026-09-23",
+      "official_close": {
+        "symbol": "MELI",
+        "date": "2026-09-23",
+        "price": "1799.24",
+        "interpolated": false,
+        "source": "sip-list-exchange-close"
+      },
+      "state": "active",
+      "has_traded": true,
+      "daily_change_pct": -1.3055512327427188,
+      "valid_at_initial_check": true,
+      "breached_daily_observation_threshold_at_initial_check": false
+    }
+  ],
+  "financials": {
+    "results": [
+      {
+        "symbol": "ADBE",
+        "period": "quarterly",
+        "financials": [
+          {
+            "fiscal_year": 2026,
+            "fiscal_quarter": 3,
+            "period_end_date": "2026-08-28",
+            "revenue": "6760000000.000000",
+            "gross_profit": "5997000000.000000",
+            "net_income": "1827000000.000000",
+            "net_margin": "27.030000"
+          }
+        ]
+      },
+      null
+    ]
+  },
+  "filing_index": {
+    "ADBE": {
+      "symbol": "ADBE",
+      "filings": []
+    },
+    "MELI": {
+      "symbol": "MELI",
+      "filings": []
+    },
+    "ADBE_widened": {
+      "symbol": "ADBE",
+      "filings": [
+        {
+          "filing_id": "92e65a76-e4a1-40d6-b17d-92e76f743e89",
+          "form_type": "10-Q",
+          "description": "Quarterly report pursuant to section 13 or 15(d)",
+          "date_filed": "2026-09-22"
+        },
+        {
+          "filing_id": "6c8230ee-55c8-4364-a224-93adaa347558",
+          "form_type": "4",
+          "description": "Insider Transaction",
+          "date_filed": "2026-09-18"
+        },
+        {
+          "filing_id": "3c8a4e9a-73a3-4c2e-9484-b6aefeefaf6b",
+          "form_type": "4",
+          "description": "Insider Transaction",
+          "date_filed": "2026-09-17"
+        },
+        {
+          "filing_id": "8e18db0e-dc9c-4511-9287-c482982743c2",
+          "form_type": "4",
+          "description": "Insider Transaction",
+          "date_filed": "2026-09-17"
+        },
+        {
+          "filing_id": "baf164ba-1e7f-460d-9bbf-66474566d092",
+          "form_type": "4",
+          "description": "Insider Transaction",
+          "date_filed": "2026-09-17"
+        }
+      ]
+    },
+    "MELI_widened": {
+      "symbol": "MELI",
+      "filings": [
+        {
+          "filing_id": "8897136d-c9d8-4f97-a234-c3c847de6987",
+          "form_type": "8-K",
+          "description": "Current report",
+          "date_filed": "2026-09-14"
+        }
+      ]
+    }
+  },
+  "news_metadata": {
+    "ADBE": [
+      {
+        "id": "5d948914-e16f-4eec-a416-7f499b141ba1",
+        "title": "Citrini’s New Short List: 90 Subscription Stocks at Risk From The ‘Agentic Cancellation Wave’",
+        "publisher": "Benzinga",
+        "preview_text": "Citrini's short list targets 90 subscription stocks, from Planet Fitness to Comcast and Sirius XM, as AI agents cancel and renegotiate.",
+        "published_at": "2026-09-24T09:52:41-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "1d33b363-3478-4465-83e0-5c742326bbf1",
+        "title": "Comparative Study: Adobe And Industry Competitors In Software Industry",
+        "publisher": "Benzinga",
+        "preview_text": "In today's fast-paced and competitive business landscape, it is essential for investors and industry enthusiasts to thoroughly analyze companies before making investment decisions. In this article, we will conduct a",
+        "published_at": "2026-09-24T05:59:22-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "64137fca-e5d9-4785-8d98-41520356363f",
+        "title": "Melania Trump to Ring NYSE's Opening Bell Wednesday, Launch New Initiative for Female CEOs in Her 'Week of American Excellence'",
+        "publisher": "Benzinga",
+        "preview_text": "First Lady Melania Trump will ring the NYSE's opening bell Wednesday and launch IMPERIA, an invite-only initiative for female CEOs.",
+        "published_at": "2026-09-22T23:54:22-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "9987b56d-a513-4f95-b5d2-2cdf47b29685",
+        "title": "Update: Market Chatter: Big Software Firms Offer AI Discounts in Bid to Counter Anthropic, OpenAI",
+        "publisher": "MT Newswires",
+        "published_at": "2026-09-22T15:08:18-04:00",
+        "source_type": "mt_newswires"
+      },
+      {
+        "id": "62768150-c0ec-4ef3-bafa-6b16a572e7ea",
+        "title": "Market Chatter: Big Software Firms Offer AI Discounts in Bid to Counter Anthropic, OpenAI",
+        "publisher": "MT Newswires",
+        "published_at": "2026-09-22T10:20:42-04:00",
+        "source_type": "mt_newswires"
+      },
+      {
+        "id": "766d8ddb-2e7a-493d-9aea-1a188f1a4b8c",
+        "title": "Here’s How Much You Would Have Made Owning Adobe Stock In The Last 15 Years",
+        "publisher": "Benzinga",
+        "preview_text": "Adobe (NASDAQ:ADBE) has outperformed the market over the past 15 years by 3.02% on an annualized basis producing an average annual return of 16.4%. Currently, Adobe has a market capitalization of $99.29 billion. \nBuying",
+        "published_at": "2026-09-21T19:45:39-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "ed216daf-a463-4a12-8c7e-a777e1497dd0",
+        "title": "Adobe Insider Sold Shares Worth $31,344,876, According to a Recent SEC Filing",
+        "publisher": "MT Newswires",
+        "published_at": "2026-09-21T03:59:22-04:00",
+        "source_type": "mt_newswires"
+      },
+      {
+        "id": "6dfbe023-3d7d-4bba-b18f-c4edffe4eebd",
+        "title": "If You Invested $100 In Adobe Stock 20 Years Ago, You Would Have This Much Today",
+        "publisher": "Benzinga",
+        "preview_text": "Adobe (NASDAQ:ADBE) has outperformed the market over the past 20 years by 1.14% on an annualized basis producing an average annual return of 10.3%. Currently, Adobe has a market capitalization of $105.12 billion.",
+        "published_at": "2026-09-14T19:15:27-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "cf2006ba-0ff1-4b4a-81e2-bd24b16d2342",
+        "title": "Goldman Sachs Adjusts Price Target on Adobe to $200 From $190, Keeps Sell Rating",
+        "publisher": "MT Newswires",
+        "published_at": "2026-09-14T05:30:21-04:00",
+        "source_type": "mt_newswires"
+      },
+      {
+        "id": "46277e0e-2c05-4d4b-8f8a-82c8849de6d1",
+        "title": "Consumer Tech (Sep 7-11): Apple Launches First Foldable iPhone, XPeng Commissioned IRON Humanoid Robot Production & More",
+        "publisher": "Benzinga",
+        "preview_text": "Apple unveiled its iPhone Duo foldable smartphone alongside new iPhone models and Apple Watch products, expanding its hardware lineup with AI capabilities.",
+        "published_at": "2026-09-12T17:07:02-04:00",
+        "source_type": "benzinga"
+      }
+    ],
+    "MELI": [
+      {
+        "id": "553949b2-9793-48a2-a005-3e7349124059",
+        "title": "QUICK SPARK: Michael Burry Adds to Micron, Palantir, Nebius, SOXX Shorts",
+        "publisher": "Benzinga",
+        "preview_text": "Michael Burry increased his short positions in Micron, Nebius, SOXX and Palantir, while adding to five consumer and retail stocks.",
+        "published_at": "2026-09-22T16:38:23-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "5de53462-a99f-4c13-9d7c-8fcff7f06ca9",
+        "title": "Here's How Much $1000 Invested In MercadoLibre 10 Years Ago Would Be Worth Today",
+        "publisher": "Benzinga",
+        "preview_text": "MercadoLibre (NASDAQ:MELI) has outperformed the market over the past 10 years by 11.73% on an annualized basis producing an average annual return of 25.36%. Currently, MercadoLibre has a market capitalization of $93.23",
+        "published_at": "2026-09-22T10:45:21-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "1a6cadc1-84b8-4c4b-8831-b46715a9137d",
+        "title": "$1000 Invested In MercadoLibre 15 Years Ago Would Be Worth This Much Today",
+        "publisher": "Benzinga",
+        "preview_text": "MercadoLibre (NASDAQ:MELI) has outperformed the market over the past 15 years by 11.71% on an annualized basis producing an average annual return of 24.84%. Currently, MercadoLibre has a market capitalization of $96.85",
+        "published_at": "2026-09-11T12:30:25-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "c608885b-c7c0-421e-93e4-df79402fd9f1",
+        "title": "MercadoLibre Issues $1 Billion in Senior Notes",
+        "publisher": "MT Newswires",
+        "published_at": "2026-09-10T10:15:04-04:00",
+        "source_type": "mt_newswires"
+      },
+      {
+        "id": "79f3fae3-166d-4d0c-8628-6438e88ca71c",
+        "title": "Here's How Much $1000 Invested In MercadoLibre 10 Years Ago Would Be Worth Today",
+        "publisher": "Benzinga",
+        "preview_text": "MercadoLibre (NASDAQ:MELI) has outperformed the market over the past 10 years by 13.35% on an annualized basis producing an average annual return of 26.82%. Currently, MercadoLibre has a market capitalization of $92.32",
+        "published_at": "2026-08-17T10:45:53-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "37203e07-4526-4673-b3c0-e729c69a7053",
+        "title": "Stanley Druckenmiller Bets Big on AMZN, AMD — Dumps AVGO, INTC and MU in Q2",
+        "publisher": "Benzinga",
+        "preview_text": "Stanely Druckenmiller rotated into Amazon, AMD and AI infrastructure while dumping Broadcom, Intel and Micron.",
+        "published_at": "2026-08-15T04:44:40-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "b9af9609-b06f-4244-8cdf-622d65296408",
+        "title": "Jim Cramer Says Buy Carpenter Technology, Calls This IT Services Stock a 'Value Trap'",
+        "publisher": "Benzinga",
+        "preview_text": "Cramer recommends buying Carpenter Technology (NYSE: CRS) and calls DXC Technology (NYSE: DXC) a value trap. Senseonics Holdings (NASDAQ: SENS) posts upbeat sales and Ubiquiti (NYSE: UI) reports worse-than-expected results. Hess Midstream (NYSE: HESM) is a winner while Zeta Global (NYSE: ZETA) announces a new CMO. UL Solutions (NYSE: ULS) is a potential buy and Coupang (NYSE: CPNG) is not recommended, but MercadoLibre (NASDAQ: MELI) and Amazon (NASDAQ: AMZN) are worth considering.",
+        "published_at": "2026-08-14T08:34:16-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "ad626028-4c3a-41da-b0c9-d882ad9349c9",
+        "title": "9 Consumer Discretionary Stocks With Whale Alerts In Today’s Session",
+        "publisher": "Benzinga",
+        "preview_text": "This whale alert can help traders discover the next big trading opportunities.\nWhales are entities with large sums of money and we track their transactions here at Benzinga on our options activity scanner.\nTraders often",
+        "published_at": "2026-08-13T13:35:37-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "69c43c17-adaa-4e1a-8ae4-04fd9e2e5570",
+        "title": "MercadoLibre's AI, Fintech And Commerce Boom Can't Offset Margin Concerns",
+        "publisher": "Benzinga",
+        "preview_text": "MercadoLibre tops Q2 revenue at $10.2B, but stock falls on margin squeeze from free shipping & credit expansion.",
+        "published_at": "2026-08-06T07:51:40-04:00",
+        "source_type": "benzinga"
+      },
+      {
+        "id": "2a02bd49-dae2-4558-a589-f7a8fedb95e0",
+        "title": "-- Earnings Flash (MELI) MercadoLibre, Inc. Reports Q2 Revenue $10.20B, vs. FactSet Est of $9.78B",
+        "publisher": "MT Newswires",
+        "published_at": "2026-08-05T17:27:05-04:00",
+        "source_type": "mt_newswires"
+      }
+    ]
+  },
+  "pending_review_added": [
+    {
+      "type": "company_announcement",
+      "symbol": "ADBE",
+      "id": "ADBE:Topaz:closing:2026-09-23",
+      "url": "https://blog.adobe.com/en/publish/2026/09/23/adobe-completes-acquisition-of-topaz-labs",
+      "published_date": "2026-09-23",
+      "event_date": "2026-09-23",
+      "discovered_at": "2026-09-24T21:41:49Z",
+      "status": "primary_announcement_opened_financial_review_deferred",
+      "reason": "Official post says acquisition completed September 23. Funding/terms and materiality review unfinished when clock recheck showed after-hours. Original 10-Q reopen returned an internal error; earlier run had reviewed that filing. Not reported, no valuation-rule change."
+    },
+    {
+      "type": "company_product_announcement",
+      "symbol": "ADBE",
+      "id": "ADBE:Gemini-Claude:rollout:2026-09-24",
+      "url": "https://blog.adobe.com/en/publish/2026/09/24/adobe-comes-to-gemini-expands-what-you-can-do-in-claude",
+      "published_date": "2026-09-24",
+      "event_date": "2026-09-24",
+      "discovered_at": "2026-09-24T21:41:49Z",
+      "status": "primary_announcement_opened_defer_next_regular_session",
+      "reason": "Official product/distribution rollout announcement opened. No paid-adoption or financial uplift established. Not a standalone trade signal; defer final review."
+    },
+    {
+      "type": "secondary_research_opinion",
+      "symbol": "ADBE",
+      "article_id": "5d948914-e16f-4eec-a416-7f499b141ba1",
+      "url": "https://www.benzinga.com/analyst-stock-ratings/analyst-color/26/09/61971690/citrini-ai-short-list-90-subscription-stocks-agentic-cancellation",
+      "published_at": "2026-09-24T09:52:41-04:00",
+      "discovered_at": "2026-09-24T21:41:49Z",
+      "status": "secondary_body_opened_defer_next_regular_session",
+      "reason": "Benzinga discusses a short-basket thesis about AI-assisted cancellations. Original research not verified; no Adobe churn or paid-demand deterioration established. Do not infer the reason for price movement."
+    }
+  ],
+  "opened_primary_urls": [
+    "https://www.adobe.com/investor-relations/investor-news.html",
+    "https://investor.mercadolibre.com/sec-filings",
+    "https://blog.adobe.com/en/publish/2026/09/23/adobe-completes-acquisition-of-topaz-labs",
+    "https://blog.adobe.com/en/publish/2026/09/24/adobe-comes-to-gemini-expands-what-you-can-do-in-claude",
+    "https://www.sec.gov/Archives/edgar/data/1099590/000109959026000021/meli-20260805xex991.htm"
+  ],
+  "source_errors": [
+    {
+      "url": "https://www.sec.gov/Archives/edgar/data/796343/000079634326000156/adbe-20260828.htm",
+      "error": "web open internal error",
+      "prior_successful_review_at": "2026-09-24T13:39:45Z",
+      "handling": "No retry after clock confirmed after-hours; defer acquisition terms review."
+    }
+  ],
+  "result": {
+    "decision": "DONT_NOTIFY",
+    "status": "deferred_session_ended_during_review",
+    "reason": "Initial regular-session quotes were usable at their check time. Subsequent clock checks confirmed after-hours before new announcement diligence finished. No current price or trade alert issued; pending evidence retained. Not a completed finding of no risk/no signal.",
+    "market_data_fetched": true,
+    "initial_quote_check_completed": true,
+    "final_quote_check_completed": false,
+    "news_discovered": true,
+    "news_review_completed": false,
+    "new_material_events_found": null,
+    "price_alerts": [],
+    "valuation_alerts": [],
+    "trade_draft_created": false,
+    "account_data_read": false,
+    "broker_write_calls": 0,
+    "order_preview_calls": 0
+  },
+  "rule_changes": [],
+  "notes": "No additional market/news calls after after-hours clock observation. Existing judgments, reported events, connections and validated quote state preserved. Initial snapshots are historical as of the stated timestamp, not current after-hours data. No inferred cause for the time gaps."
+}

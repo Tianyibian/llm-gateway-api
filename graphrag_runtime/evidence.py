@@ -1,6 +1,18 @@
 """Map GraphRAG's actual retrieved context back to persisted artifact IDs."""
 import re
+import unicodedata
 from collections import Counter
+
+
+def mentioned(text, name):
+    """Use the same normalized whole-name boundary contract as the task guard."""
+    text, name = (" ".join(unicodedata.normalize("NFKC", value).casefold().split())
+                  for value in (text, name))
+    if not name:
+        return False
+    left = r"(?<![a-z0-9_])" if name[0].isascii() and name[0].isalnum() else ""
+    right = r"(?![a-z0-9_])" if name[-1].isascii() and name[-1].isalnum() else ""
+    return re.search(left + re.escape(name) + right, text) is not None
 
 
 def normalize_id(value):
@@ -55,7 +67,7 @@ def candidates(context, tables, answer, *, limit=5):
             for entity in entities:
                 name = str(entity.get("title", ""))
                 entity_type = allowed_types.get(str(entity.get("type", "")).casefold())
-                if name and len(name) <= 200 and entity_type and name.casefold() in text.casefold():
+                if name and len(name) <= 200 and entity_type and mentioned(text, name):
                     names.append({"text": name, "entity_type": entity_type})
                 if len(names) == 12:
                     break

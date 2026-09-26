@@ -1,0 +1,3 @@
+# Install this dependency set in .venv-graphrag, not the application's runtime.
+# Microsoft GraphRAG 3.1.2 supports Python >=3.11,<3.14.
+graphrag==3.1.2

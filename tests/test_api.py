@@ -114,27 +114,15 @@ class FakeAssistantService:
             yield "delta", {"content": "A small test image."}
             return
         yield "route", {
-            "route": "product_search",
-            "reason": "The query requests product inventory.",
+            "route": "policy_search",
+            "reason": "The query requests return policy information.",
             "confidence": 0.97,
         }
         yield "sources", {
-            "sources": ["Business_data/Products.csv"],
-            "products": [
-                {
-                    "product_id": 1,
-                    "product_name": "Philips Hue Smart Lock Max",
-                    "category": "Smart Lock",
-                    "supplier": "Philips Hue",
-                    "quantity_per_unit": "1 device with accessories",
-                    "unit_price": 5672.5,
-                    "units_in_stock": 615,
-                    "units_on_order": 34,
-                    "discontinued": False,
-                }
-            ],
+            "sources": ["Knowledge Base/Return Policy.pdf"],
+            "documents": [{"title": "Return Policy", "source_file": "Knowledge Base/Return Policy.pdf"}],
         }
-        yield "delta", {"content": f"Catalog answer for: {query}"}
+        yield "delta", {"content": f"Policy answer for: {query}"}
 
 
 class FakeKnowledgeRetriever:
@@ -498,7 +486,7 @@ def test_assistant_stream_contains_route_sources_and_real_delta(api_client) -> N
     response = client.post(
         "/api/assistant",
         json={
-            "query": "Show me Philips Hue smart lock inventory.",
+            "query": "What is the return policy?",
             "user_id": "assistant-user",
         },
     )
@@ -507,10 +495,10 @@ def test_assistant_stream_contains_route_sources_and_real_delta(api_client) -> N
     assert response.headers["content-type"].startswith("text/event-stream")
     assert '"service": "assistant"' in response.text
     assert 'event: route' in response.text
-    assert '"route": "product_search"' in response.text
+    assert '"route": "policy_search"' in response.text
     assert 'event: sources' in response.text
-    assert '"product_name": "Philips Hue Smart Lock Max"' in response.text
-    assert 'data: {"content": "Catalog answer for: Show me Philips Hue smart lock inventory."}' in response.text
+    assert '"title": "Return Policy"' in response.text
+    assert 'data: {"content": "Policy answer for: What is the return policy?"}' in response.text
     assert 'data: "[DONE]"' in response.text
 
     conversation_id = _sse_payload(response.text, "metadata")["conversation_id"]
@@ -519,10 +507,10 @@ def test_assistant_stream_contains_route_sources_and_real_delta(api_client) -> N
         params={"user_id": "assistant-user"},
     )
     assert [(item["role"], item["content"]) for item in messages.json()] == [
-        ("user", "Show me Philips Hue smart lock inventory."),
+        ("user", "What is the return policy?"),
         (
             "assistant",
-            "Catalog answer for: Show me Philips Hue smart lock inventory.",
+            "Policy answer for: What is the return policy?",
         ),
     ]
 
@@ -549,7 +537,7 @@ def test_second_assistant_turn_receives_persisted_history(api_client) -> None:
     assert second.status_code == 200
     assert service.calls[1]["history"] == [
         ("user", "Remember product A."),
-        ("assistant", "Catalog answer for: Remember product A."),
+        ("assistant", "Policy answer for: Remember product A."),
     ]
 
 

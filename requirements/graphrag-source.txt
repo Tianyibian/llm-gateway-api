@@ -1,0 +1,10 @@
+# Run pip from the project root after initializing the pinned GraphRAG submodule.
+# Install requirements/graphrag.txt first to provision third-party dependencies.
+-e ./third_party/graphrag/packages/graphrag
+-e ./third_party/graphrag/packages/graphrag-cache
+-e ./third_party/graphrag/packages/graphrag-chunking
+-e ./third_party/graphrag/packages/graphrag-common
+-e ./third_party/graphrag/packages/graphrag-input
+-e ./third_party/graphrag/packages/graphrag-llm
+-e ./third_party/graphrag/packages/graphrag-storage
+-e ./third_party/graphrag/packages/graphrag-vectors

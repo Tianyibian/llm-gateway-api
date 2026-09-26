@@ -35,7 +35,7 @@ def _authentication_parameters(settings: Any) -> dict[str, Any]:
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import rsa
     except ImportError:
-        raise LLMConfigurationError("Install requirements-snowflake.txt for key-pair authentication.") from None
+        raise LLMConfigurationError("Install requirements/snowflake.txt for key-pair authentication.") from None
     path = Path(settings.snowflake_private_key_file).expanduser()
     try:
         with path.open("rb") as key_file:
@@ -78,7 +78,7 @@ def create_snowflake_engine(settings: Any, *, role: str | None = None) -> Engine
     except ImportError as exc:
         raise LLMConfigurationError(
             "Snowflake analytics requires the optional dependency. Run "
-            "'python -m pip install -r requirements-snowflake.txt'."
+            "'python -m pip install -r requirements/snowflake.txt'."
         ) from exc
 
     # Cache by credential fingerprint, not raw secrets; key rotation gets a new pool.

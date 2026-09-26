@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "Smart AI Support - File Query",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Live API tests. Select examples/file-query-demo.txt in the upload request. No mocked providers. Files go to the configured answer model."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "user_id",
+      "value": "postman-file-demo"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - Classify a file question",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/classify",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"query\":\"Summarize my attached document.\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('File route selected', () => pm.expect(pm.response.json().route).to.eql('file_query'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Upload sample and ask a question",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/api/assistant",
+        "description": "Choose examples/file-query-demo.txt manually in Body > form-data > file. Do not manually set Content-Type; Postman adds the multipart boundary. This test writes a conversation turn.",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "user_id",
+              "value": "{{user_id}}",
+              "type": "text"
+            },
+            {
+              "key": "query",
+              "value": "Who owns Project Cedar and when is the pilot launch? Cite the file.",
+              "type": "text"
+            },
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const raw = pm.response.text();",
+              "const events = raw.split(/\\r?\\n\\r?\\n/).map(block => { const lines=block.split(/\\r?\\n/); const name=lines.find(x=>x.startsWith('event: ')); const data=lines.find(x=>x.startsWith('data: ')); return name && data ? {name:name.slice(7), data:JSON.parse(data.slice(6))} : null; }).filter(Boolean);",
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('File branch selected', () => pm.expect(events.some(e=>e.name==='route' && e.data.route==='file_query')).to.eql(true));",
+              "pm.test('Uploaded-file evidence returned', () => pm.expect(events.some(e=>e.name==='sources' && e.data.backend==='uploaded_file')).to.eql(true));",
+              "const answer = events.filter(e=>e.name==='delta').map(e=>e.data.content).join('');",
+              "pm.test('Answer uses the sample evidence', () => { pm.expect(answer).to.include('Morgan Lee'); pm.expect(answer).to.include('2026'); pm.expect(answer).to.match(/\\[F\\d+\\]/); });",
+              "pm.test('Stream completed without errors', () => { pm.expect(events.some(e=>e.name==='done')).to.eql(true); pm.expect(events.some(e=>e.name==='error')).to.eql(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - Ask about file without uploading",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/api/assistant",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"query\":\"Summarize the file I uploaded.\",\"user_id\":\"{{user_id}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Missing file reminder', () => pm.expect(pm.response.text()).to.include('Please attach'));",
+              "pm.test('No graph supervisor invoked', () => pm.expect(pm.response.text()).not.to.include('event: supervisor'));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

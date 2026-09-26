@@ -10,6 +10,9 @@ from app.models.cypher import CypherExecution
 
 
 class GraphTool(str, Enum):
+    PREDEFINED_CYPHER = "predefined_cypher"
+    TEXT_TO_CYPHER = "text_to_cypher"
+    # Retained for legacy callers; the application factory registers explicit tools.
     NEO4J = "neo4j_relationships"
     MS_LOCAL = "ms_local_search"
     MS_GLOBAL = "ms_global_search"

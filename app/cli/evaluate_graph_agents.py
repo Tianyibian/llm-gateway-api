@@ -52,6 +52,4 @@ async def evaluate(base_url):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    asyncio.run(evaluate(parser.parse_args().base_url))
+    raise SystemExit("Legacy specialist evaluation is retired. Run: python -m app.cli.evaluate_graph_tasks")

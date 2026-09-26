@@ -103,7 +103,7 @@ def test_first_retrieval_changes_next_plan_and_parallel_backend_selection():
     plans = Plans(retrieve(), retrieve(
         task("What other products does Acme Supply supply?", parents=["E1"]),
         task("Summarize support themes for Acme Supply products.", "ms_global_search", ["E1"]),
-    ), finish("E2", "E3"))
+    ), finish("E1", "E2", "E3"))
     tool = FakeTool(delay=0.01)
     supervisor, _ = service(plans, tool=tool)
     result = asyncio.run(supervisor.run(ROOT))
@@ -113,7 +113,7 @@ def test_first_retrieval_changes_next_plan_and_parallel_backend_selection():
     assert plans.inputs[0]["evidence"] == []
     assert "Acme Supply" in plans.inputs[1]["evidence"][0]["text"]
     assert [e.evidence_id for e in result.evidence] == ["E1", "E2", "E3"]
-    assert result.answer_evidence_ids == ["E2", "E3"]
+    assert result.answer_evidence_ids == ["E1", "E2", "E3"]
     assert all(e.parent_evidence_ids == ["E1"] for e in result.evidence[1:])
     assert "[E2]" in result.answer
 
@@ -134,7 +134,6 @@ def test_plan_schema_rejects_execution_escape_hatches(invalid):
     ([finish("E999")], "fabricated_evidence"),
     ([retrieve(task(parents=["E999"]))], "fabricated_parent_evidence"),
     ([retrieve(task("Find products supplied by Invented Corp."))], "entity_without_lineage"),
-    ([retrieve(task(), task("second lookup"))], "first_retrieval_must_be_single"),
     ([retrieve(task(tool="ms_local_search"))], "tool_not_connected"),
     ([retrieve(task(tool="ms_global_search"))], "task_backend_mismatch"),
 ])
@@ -184,7 +183,7 @@ def test_budgets_stop_additional_retrieval(limits):
 def test_configured_parallel_limit_is_enforced():
     tool = FakeTool(delay=0.01)
     plans = Plans(retrieve(), retrieve(task("Acme Supply products", parents=["E1"]),
-                                      task("Acme Supply themes", "ms_global_search", ["E1"])), finish())
+                                      task("Acme Supply themes", "ms_global_search", ["E1"])), finish("E1", "E2", "E3"))
     supervisor, _ = service(plans, tool=tool, limits=SupervisorLimits(max_parallel=1))
     assert asyncio.run(supervisor.run(ROOT)).status == "complete"
     assert tool.peak == 1
@@ -311,6 +310,10 @@ def test_internal_handoff_requires_explicit_server_approval(approval):
 
 def test_parent_handoff_contains_only_original_question_and_gate():
     class SupervisorSpy:
+        def with_search_mode(self, mode):
+            assert mode == "local"
+            return self
+
         async def run_approved(self, query, *, scope_approved):
             assert query == ROOT
             assert scope_approved is True

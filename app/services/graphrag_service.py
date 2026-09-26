@@ -10,6 +10,7 @@ from app.services.graph_supervisor import GraphRAGSupervisor
 
 class GraphBranchState(TypedDict, total=False):
     query: str
+    graphrag_search_mode: str
     graph_guardrail_decision: dict
     answer: str
     graph_supervisor_result: dict
@@ -19,7 +20,10 @@ def build_graphrag_branch(guardrail: GraphRAGGuardrail, supervisor: GraphRAGSupe
     """Only approved GraphRAG queries enter the adaptive supervisor."""
     async def assess(state: GraphBranchState) -> GraphBranchState:
         decision = await guardrail.evaluate(state["query"])
-        return {"graph_guardrail_decision": decision.model_dump(mode="json")}
+        payload = decision.model_dump(mode="json")
+        from langgraph.config import get_stream_writer
+        get_stream_writer()({"event": "guardrail", "payload": payload})
+        return {"graph_guardrail_decision": payload}
 
     def respond(state: GraphBranchState) -> GraphBranchState:
         decision = state["graph_guardrail_decision"]
@@ -27,7 +31,8 @@ def build_graphrag_branch(guardrail: GraphRAGGuardrail, supervisor: GraphRAGSupe
                 else scope_stop_message(decision["action"])}
 
     async def supervise(state: GraphBranchState) -> GraphBranchState:
-        result = await supervisor.run_approved(
+        selected = supervisor.with_search_mode(state.get("graphrag_search_mode", "local"))
+        result = await selected.run_approved(
             state["query"],
             scope_approved=state["graph_guardrail_decision"]["action"] == "allow",
         )

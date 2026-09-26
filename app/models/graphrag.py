@@ -22,6 +22,10 @@ class GraphGuardrailRequest(GraphContract):
         return value
 
 
+class GraphQueryRequest(GraphGuardrailRequest):
+    graphrag_search_mode: Literal["local", "global"] = "local"
+
+
 class GraphScope(str, Enum):
     IN_SCOPE = "in_scope"
     MIXED = "mixed"

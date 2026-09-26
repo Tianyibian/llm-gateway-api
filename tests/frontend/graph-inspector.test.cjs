@@ -35,6 +35,35 @@ test('No execution history is invented before receiving events', () => {
   assert.equal(view.events.children.length, 0);
 });
 
+test('Direct task progress names the actual tool without inventing an agent', () => {
+  const { inspector } = runtime();
+  const view = inspector.create();
+  inspector.record(view, 'Graph task', {task_id: 'R1T1', tool: 'predefined_cypher', stage: 'started',
+    question: '<script>supplier</script>', parent_evidence_ids: []});
+  inspector.record(view, 'Graph task', {task_id: 'R1T2', tool: 'text_to_cypher', stage: 'completed', status: 'failed', error: 'retrieval_failed'});
+  assert.match(view.events.textContent, /Predefined Cypher tool/);
+  assert.match(view.events.textContent, /Text-to-Cypher tool/);
+  assert.match(view.events.textContent, /retrieval_failed/);
+  assert.doesNotMatch(view.events.textContent, /reviews_agent|sales_agent|catalog_agent/);
+});
+
+test('Uploaded file route is distinct from shared RAG and graph workers', () => {
+  const { inspector } = runtime();
+  const view = inspector.create();
+  inspector.record(view, 'Router', {route: 'file_query', reason: 'Document attached'});
+  assert.match(view.overview.textContent, /Uploaded file branch/);
+  assert.match(view.overview.textContent, /does not use the GraphRAG supervisor/);
+});
+
+test('Requested Microsoft mode is labeled separately from actual retrieval', () => {
+  const { inspector } = runtime();
+  const view = inspector.create();
+  inspector.record(view, 'Router', {route: 'graph_rag_search', graphrag_search_mode: 'global'});
+  assert.match(view.events.textContent, /Microsoft search mode: global/);
+  assert.match(view.events.textContent, /requested; actual calls appear below/);
+  assert.match(view.overview.textContent, /No retrieval worker has been reported yet/);
+});
+
 test('Hierarchical trace distinguishes subagents, tools and maps without rendering HTML', () => {
   const { inspector } = runtime();
   const view = inspector.create();

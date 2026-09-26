@@ -52,7 +52,7 @@ preparation artifacts, not a completed Microsoft GraphRAG index. Git ignores
 the `.local/graphrag-*` outputs. Allowlisting reduces exposure but does not
 itself classify a business record as approved for external publication.
 
-### Optional review corpus, adapted from preprocess_data.py
+### Optional review corpus, adapted from scripts/reference/preprocess_data.py
 
 The original script joins reviews with product/category/supplier/customer data
 from MySQL and groups the resulting text. The application adaptation is

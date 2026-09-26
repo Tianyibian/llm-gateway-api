@@ -1,4 +1,4 @@
-"""Adapt preprocess_data.py's joined review documents without its customer export.
+"""Adapt scripts/reference/preprocess_data.py without its customer export.
 
 Local preparation only. Heuristic filtering is NOT a full PII detector; human
 review is still required before sending the generated corpus to a cloud model.

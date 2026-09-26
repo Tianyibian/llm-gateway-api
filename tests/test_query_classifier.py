@@ -24,8 +24,8 @@ def test_classifier_returns_typed_structured_output() -> None:
     async def scenario() -> None:
         chain = FakeClassificationChain(
             {
-                "route": "product_search",
-                "reason": "The query asks for product specifications.",
+                "route": "graph_rag_search",
+                "reason": "The query asks for supplier relationships.",
                 "confidence": 0.95,
             }
         )
@@ -35,16 +35,16 @@ def test_classifier_returns_typed_structured_output() -> None:
             model="qwen3:4b",
         )
 
-        result = await classifier.classify("Does this camera support Wi-Fi 6?")
+        result = await classifier.classify("Who supplies Acme Sensor?")
 
         assert result == QueryClassification(
-            route=QueryRoute.PRODUCT_SEARCH,
-            reason="The query asks for product specifications.",
+            route=QueryRoute.GRAPH_RAG_SEARCH,
+            reason="The query asks for supplier relationships.",
             confidence=0.95,
         )
         assert chain.inputs == [
             {
-                "query": "Does this camera support Wi-Fi 6?",
+                "query": "Who supplies Acme Sensor?",
                 "history": [],
             }
         ]
@@ -76,7 +76,7 @@ def test_classifier_receives_conversation_history_for_follow_up_routing() -> Non
     async def scenario() -> None:
         chain = FakeClassificationChain(
             {
-                "route": "product_search",
+                "route": "graph_rag_search",
                 "reason": "The follow-up refers to the previously discussed product.",
                 "confidence": 0.9,
             }
@@ -87,10 +87,10 @@ def test_classifier_receives_conversation_history_for_follow_up_routing() -> Non
             ("assistant", "Chai is a beverage product."),
         ]
 
-        await classifier.classify("What about its stock?", history=history)
+        await classifier.classify("Who supplies it?", history=history)
 
         assert chain.inputs == [
-            {"query": "What about its stock?", "history": history}
+            {"query": "Who supplies it?", "history": history}
         ]
 
     asyncio.run(scenario())

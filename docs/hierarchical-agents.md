@@ -1,6 +1,11 @@
 # Hierarchical GraphRAG agents
 
-The production branch separates business delegation from tool selection:
+> Historical architecture. The active factory now uses the
+> [direct task planner](graph-task-planner.md). This document describes retained
+> legacy classes, not the current frontend/API execution path. The legacy live
+> evaluator below is not the verification command for the new workflow.
+
+The legacy branch separates business delegation from tool selection:
 
 1. The router selects GraphRAG. A scope-only root guard checks the entire question
    against the business domain and schema. Supported composite questions may need
@@ -23,8 +28,10 @@ The production branch separates business delegation from tool selection:
 | --- | --- | --- |
 | `catalog_agent` | Product/supplier/category relationships and catalog counts | `neo4j_relationships` |
 | `sales_agent` | Revenue, units, transaction aggregates and trends | `neo4j_relationships` |
-| `reviews_agent` | Reviews, support themes and document synthesis | Microsoft Local, Global and DRIFT |
+| `reviews_agent` | Reviews, support themes and document synthesis | Request-selected Microsoft Local (default) or Global |
 
+The request field `graphrag_search_mode` restricts the review specialist to one
+Microsoft mode without mutating shared engines. See [Local vs Global](local-global-search.md).
 Neo4j still selects template-first or constrained Text-to-Cypher internally.
 Schema/parameter checks, semantic review, EXPLAIN, timeouts and read-only database
 controls remain. Each tool task undergoes strict backend-aware guard validation.

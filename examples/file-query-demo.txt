@@ -1,0 +1,10 @@
+Project Cedar - Synthetic planning notes
+
+This is a fictional document for testing uploaded-file questions.
+Project owner: Morgan Lee.
+Pilot launch date: October 15, 2026.
+The pilot includes 24 demonstration devices across three test locations.
+The next review is scheduled for October 8, 2026.
+
+Known limitation: offline notification delivery is not included in the pilot.
+The project budget and supplier pricing have not been approved or recorded.

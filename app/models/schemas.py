@@ -28,8 +28,8 @@ class QueryRoute(str, Enum):
     """Supported destinations for the first-stage query router."""
 
     GENERAL_SEARCH = "general_search"
+    FILE_QUERY = "file_query"
     ADDITIONAL_SEARCH = "additional_search"
-    PRODUCT_SEARCH = "product_search"
     POLICY_SEARCH = "policy_search"
     ANALYTICS_SEARCH = "analytics_search"
     GRAPH_RAG_SEARCH = "graph_rag_search"
@@ -117,6 +117,7 @@ class AssistantRequest(ClassificationRequest):
 
     user_id: str = Field(min_length=1, max_length=255)
     conversation_id: Optional[UUID] = None
+    graphrag_search_mode: Literal["local", "global"] = "local"
 
     @field_validator("user_id")
     @classmethod

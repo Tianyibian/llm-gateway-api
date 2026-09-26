@@ -143,7 +143,11 @@ def test_factory_registers_neo4j_independently_of_microsoft(monkeypatch):
     factory = LLMServiceFactory(Settings(_env_file=None, neo4j_enabled=True, microsoft_graphrag_enabled=False))
     adapter = object()
     monkeypatch.setattr(factory, "create_neo4j_service", lambda model: adapter)
-    assert factory.create_graph_retrieval_tools() == {GraphTool.NEO4J: adapter}
+    tools = factory.create_graph_retrieval_tools()
+    assert set(tools) == {GraphTool.PREDEFINED_CYPHER, GraphTool.TEXT_TO_CYPHER}
+    assert all(tool.service is adapter for tool in tools.values())
+    assert tools[GraphTool.PREDEFINED_CYPHER].strategy == "template"
+    assert tools[GraphTool.TEXT_TO_CYPHER].strategy == "text_to_cypher"
 
 
 @pytest.fixture

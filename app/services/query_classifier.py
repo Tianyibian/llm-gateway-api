@@ -12,7 +12,13 @@ class QueryClassifier:
     SYSTEM_PROMPT = """
 You are a routing classifier for an e-commerce customer-support system.
 Select exactly one route for the user's query:
+The standalone CSV product lookup is no longer available. Do not invent a route.
 
+- file_query: Questions explicitly about a user-uploaded or attached document,
+  such as summarize this file, explain the attached PDF, or find a fact in my file.
+  This route uses only the current upload; if absent, it requests an attachment.
+  It does not search local paths or treat previous answers as an available file.
+  Company policies without an explicit personal upload still use policy_search.
 - policy_search: The answer requires return or refund policy information,
   including eligibility, return windows, return labels, packaging, return
   status, refund timing, or the return process. Choose this route even when a
@@ -20,9 +26,6 @@ Select exactly one route for the user's query:
   Also includes company help-center/support knowledge: shipping, ordering,
   payments, accounts, setup, troubleshooting, warranty, privacy, subscriptions,
   manuals and support procedures. This unifies the former return/knowledge routes.
-- product_search: The answer requires product catalog information, including
-  specifications, features, compatibility, price, availability, category, or
-  comparison between products.
 - additional_search: A potentially supported business question is missing
   ESSENTIAL information needed to proceed: an unresolved product/reference,
   missing comparison target, unspecified metric or ambiguous date range.
@@ -30,7 +33,7 @@ Select exactly one route for the user's query:
   already supplied. General policy questions ('What is your return policy?'),
   all-product analytics without filters, and greetings are NOT underspecified.
   'Who supplies it?' with no known product -> additional_search.
-  'Compare these two products' with no identified products -> additional_search.
+  'Compare reviews of these two products' with no identified products -> additional_search.
   Requests for secrets, writes or unrelated coding are NOT missing-information
   cases. Do not solicit credentials or help complete unsupported requests.
 - analytics_search: The answer requires aggregation or analysis across business
@@ -50,20 +53,26 @@ Select exactly one route for the user's query:
   supplier. Exact revenue is supported by Neo4j, not Microsoft document GraphRAG.
   An explicit request to run a supported analysis in Neo4j/Cypher for comparison
   also belongs here. Arbitrary database commands are not authorized by routing.
-  Do not choose this for a single product's price/stock or a simple return policy.
+  Also route direct product price, stock, specification or compatibility requests
+  here for scope assessment: the independent CSV lookup has been removed. The
+  guardrail must decline facts outside the approved graph capabilities. Do not
+  send unsupported business facts to general_search. Simple policy questions
+  still belong to policy_search.
   This branch has a scope guardrail and a bounded supervisor; only configured,
   verified graph retrieval adapters can execute.
 - general_search: Greetings, general conversation, or questions that do not
   require company knowledge, return-policy, or product-catalog information.
 
-Examples: 'Top 5 products by revenue in 2025' -> analytics_search;
+Examples: 'What is the current stock of Acme Sensor?' -> graph_rag_search (scope assessment; live stock unavailable);
+'Top 5 products by revenue in 2025' -> analytics_search;
 'Monthly sales for 2025' -> analytics_search;
 'Who supplies Acme Sensor?' -> graph_rag_search;
 'Rank revenue of other products sharing Acme Sensor\'s supplier' -> graph_rag_search;
 'Monthly sales in 2025 using Neo4j' -> graph_rag_search;
 'Summarize recurring review themes' -> graph_rag_search (document retrieval).
 Composite business requests combining catalog relationships, sales and review
-analysis also use graph_rag_search; its business supervisor delegates the parts.
+analysis also use graph_rag_search; its task planner decomposes the request and
+dispatches subtasks directly to registered retrieval tools, not business agents.
 Do not route such a request to a single SQL report and silently drop the reviews.
 Classify only the user's intent. Do not answer the question and do not perform
 the search. Give a concise reason and a confidence score from 0.0 to 1.0.
@@ -107,7 +116,7 @@ password-reset questions use policy_search, not additional_search.
         except ImportError as exc:
             raise LLMConfigurationError(
                 "Query classification requires LangChain. Use Python 3.10+ and run "
-                "'python -m pip install -r requirements-langchain.txt'."
+                "'python -m pip install -r requirements/langchain.txt'."
             ) from exc
 
         routing_policy = (

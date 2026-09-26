@@ -20,13 +20,11 @@ from app.services.knowledge_service import KnowledgeIngestionService, KnowledgeR
 from app.services.langchain_service import LangChainChatService
 from app.services.ollama_service import OllamaChatService
 from app.services.openai_service import OpenAIResponsesService
-from app.services.product_catalog import ProductCatalog
 from app.services.query_classifier import QueryClassifier
 from app.services.snowflake_analytics import SnowflakeAnalyticsService
 from app.services.vision_service import OpenAIVisionService
 from app.services.graphrag_guardrail import GraphRAGGuardrail
 from app.services.graph_supervisor import GraphRAGSupervisor
-from app.services.graph_agents import HierarchicalGraphSupervisor
 from app.services.clarification_service import ClarificationService
 from app.services.graph_answer import GraphAnswerGenerator
 from app.services.microsoft_graphrag import MicrosoftGraphRAGClient, MicrosoftGraphRAGTool, MODES
@@ -126,7 +124,7 @@ class LLMServiceFactory:
             provider=provider, model=model, service_type=ServiceType.CHAT,
             reasoning_override=False,
         )
-        return HierarchicalGraphSupervisor.from_model(
+        return GraphRAGSupervisor.from_model(
             client, guardrail=self._guardrail_from_model(client, provider, scope_only=True),
             task_guardrail=self._guardrail_from_model(client, provider),
             tools=self.create_graph_retrieval_tools(client) if tools is None else tools,
@@ -165,7 +163,10 @@ class LLMServiceFactory:
                 pass
         if self.settings.neo4j_enabled:
             try:
-                tools[GraphTool.NEO4J] = self.create_neo4j_service(model_client)
+                from app.services.neo4j_service import CypherRetrievalTool
+                service = self.create_neo4j_service(model_client)
+                tools[GraphTool.PREDEFINED_CYPHER] = CypherRetrievalTool(service, strategy="template")
+                tools[GraphTool.TEXT_TO_CYPHER] = CypherRetrievalTool(service, strategy="text_to_cypher")
             except LLMConfigurationError:
                 pass
         return tools
@@ -216,7 +217,6 @@ class LLMServiceFactory:
         analytics_service = None
         if self.resolve_analytics_backend() == "snowflake":
             analytics_service = SnowflakeAnalyticsService.from_settings(self.settings)
-        catalog = ProductCatalog(self.settings.business_data_dir)
         knowledge_retriever = self.create_knowledge_retriever()
         try:
             vision_service = self.create_vision_service()
@@ -227,13 +227,12 @@ class LLMServiceFactory:
             classifier=classifier,
             clarification_service=ClarificationService.from_model(classifier_client, analytics_backend=self.resolve_analytics_backend()),
             model_client=answer_client,
-            product_catalog=catalog,
             vision_service=vision_service,
             knowledge_retriever=knowledge_retriever,
             analytics_planner=analytics_planner,
             analytics_service=analytics_service,
             graph_guardrail=graph_guardrail,
-            graph_supervisor=HierarchicalGraphSupervisor.from_model(
+            graph_supervisor=GraphRAGSupervisor.from_model(
                 classifier_client, guardrail=graph_guardrail,
                 task_guardrail=self._guardrail_from_model(classifier_client, provider),
                 tools=self.create_graph_retrieval_tools(classifier_client),
@@ -381,7 +380,7 @@ class LLMServiceFactory:
             except ImportError as exc:
                 raise LLMConfigurationError(
                     "LangChain OpenAI support is not installed. Run "
-                    "'python -m pip install -r requirements-langchain.txt'."
+                    "'python -m pip install -r requirements/langchain.txt'."
                 ) from exc
 
             options: dict[str, Any] = {
@@ -401,7 +400,7 @@ class LLMServiceFactory:
             except ImportError as exc:
                 raise LLMConfigurationError(
                     "LangChain Ollama support is not installed. Run "
-                    "'python -m pip install -r requirements-langchain.txt'."
+                    "'python -m pip install -r requirements/langchain.txt'."
                 ) from exc
 
             return ChatOllama(

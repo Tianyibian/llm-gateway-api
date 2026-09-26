@@ -8,6 +8,9 @@
 venv
 **/__pycache__
 .pytest_cache
+notebooks
+LangGraph_Know
+third_party/graphrag
 **/*.p8
 **/*.pem
 **/*.key
