@@ -14,6 +14,7 @@ __pycache__/
 .ruff_cache/
 .local/graphrag-*
 .local/snowflake/
+.local/policy-reranker/
 *.p8
 *.pem
 *.key

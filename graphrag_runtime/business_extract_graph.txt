@@ -4,9 +4,12 @@ corpus with unverified customer opinions, contradictions, and sampling bias.
 Do not invent missing facts, product capabilities, policies, people, or customers.
 Allowed entity types: {entity_types}.
 
-Use the full product display name as Product name, the named supplier as Supplier,
-and the named product category as Category. Preserve explicit business IDs such
-as Product:15 in descriptions. A supplier is not necessarily a manufacturer.
+Use the full product display name followed by its explicit Product ID as the
+Product entity name, for example ACME SENSOR (Product:15). Different Product IDs
+are different products even if their display names are identical. Keep those
+entities and their review relationships separate. Do not invent missing IDs.
+Use the named supplier as Supplier and the named product category as Category.
+Preserve explicit business IDs in descriptions. A supplier is not necessarily a manufacturer.
 Use short normalized concepts such as SETUP PROCESS, BATTERY LIFE, APP STABILITY,
 or COMPATIBILITY for SupportTopic entities when supported by review content.
 Do not create entities for reviewer IDs, dates, ratings, generic disclaimers,

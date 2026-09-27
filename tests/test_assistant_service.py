@@ -59,6 +59,11 @@ class FakeKnowledgeRetriever:
         ]
 
 
+class AllowPolicyGuardrail:
+    async def assess(self, query, **kwargs):
+        return {"allowed": True, "action": "allow"}
+
+
 class FakeAnalyticsPlanner:
     async def plan(self, query: str) -> AnalyticsQueryPlan:
         assert query == "What are the top products by revenue?"
@@ -122,6 +127,7 @@ def test_return_graph_retrieves_knowledge_and_emits_citations() -> None:
             classifier=FakeClassifier(QueryRoute.POLICY_SEARCH),
             model_client=model,
             knowledge_retriever=FakeKnowledgeRetriever(),  # type: ignore[arg-type]
+            policy_guardrail=AllowPolicyGuardrail(),
             provider="fake",
             model="fake-model",
         )

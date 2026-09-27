@@ -63,6 +63,7 @@ class CypherExecution(GraphContract):
     row_count: int = Field(ge=0, le=20)
     truncated: bool
     checks: list[str] = Field(default_factory=list)
+    entity_resolutions: list[dict[str, str | int]] = Field(default_factory=list, max_length=6)
 
 
 class CypherReview(GraphContract):
@@ -72,7 +73,8 @@ class CypherReview(GraphContract):
 
 
 class CypherResult(GraphContract):
-    status: Literal["complete", "unsupported", "unavailable", "rejected"]
+    status: Literal["complete", "unsupported", "unavailable", "rejected", "clarify"]
     reason_code: str
     execution: CypherExecution | None = None
     rows: list[dict] = Field(default_factory=list, max_length=20)
+    clarification: str | None = None

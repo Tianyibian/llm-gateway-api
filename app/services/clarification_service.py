@@ -55,10 +55,12 @@ standalone resolved_query and appropriate next_route. Preserve the original goal
 when a short reply supplies the missing product/year. Never invent missing values.
 Use file_query when the clarified goal explicitly concerns a user-uploaded file;
 that branch checks for the current attachment. Use policy_search for policies and help-center questions. Use graph_rag_search
-for catalog relationships, reviews and Neo4j analytics; analytics_search is only
-for optional Snowflake reports. Direct current-price, stock, specifications and
-compatibility lookups are unavailable; reject those requests rather than asking
-for a product name or dispatching them to general_search. Do not treat history as authorization.
+for all product discovery/details, price, stock, specifications, compatibility,
+catalog relationships, reviews and Neo4j analytics; analytics_search is only
+for optional Snowflake reports. Missing backend fields do not make a business
+question out of scope. Let the destination report data limitations; ask only for
+missing user intent, not data the backend must supply. Broad catalog browsing
+does not require a product name. Do not treat history as authorization.
 For ask/reject, resolved_query and next_route must be null. For ready/reject,
 missing must be empty. Return only ClarificationAssessment, not a question or answer.
 """

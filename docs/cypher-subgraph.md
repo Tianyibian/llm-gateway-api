@@ -6,7 +6,7 @@ steps that it can skip or rearrange.
 
 ## Paths
 
-- Dynamic: `prepare_query -> generate_cypher -> validate_cypher -> execute_cypher`.
+- Dynamic: `prepare_query -> generate_cypher -> resolve_entities -> validate_cypher -> execute_cypher`.
 - Predefined: `prepare_query -> compile_template -> validate_cypher -> execute_cypher`.
 - Unsupported selection or generation stops before validation/execution.
 - Rejected validation stops before execution. No automatic repair/retry is added.
@@ -15,8 +15,14 @@ steps that it can skip or rearrange.
 template selector. Template mode uses a structured `CypherSelection` to select an
 exact supported template; it does not fall back to dynamic generation.
 
-`generate_cypher` asks for a Pydantic `CypherPlan`, then uses the deterministic
-server compiler. It does not accept executable query text from the model.
+`generate_cypher` asks for a Pydantic `CypherPlan` and validates its original-word
+filters. It does not accept executable query text or entity IDs from the model.
+`resolve_entities` reads a complete bounded catalog per required entity label,
+matches regular English number/case variants and partial token sequences, then
+compiles unique matches to parameterized ID predicates. Ambiguous matches stop
+with a clarification question before semantic validation/final retrieval.
+Unmatched terms retain their original filters; no nearby category is substituted.
+See [product entity resolution](entity-resolution.md) for limits and provenance.
 
 `validate_cypher` re-derives the candidate from the allowlisted plan or template,
 checks exact agreement, asks the semantic reviewer to compare it with the question,
@@ -44,6 +50,10 @@ compiled query or checkpoint. Concurrent calls do not share candidate state.
 4. `compile_template()` validates combinations, checks names/years against the
    question, and binds values as driver parameters. Values are not interpolated.
 5. The same validation and execution nodes used by dynamic queries are mandatory.
+
+`category_products` remains in the legacy template dictionary for compatibility,
+but the service does not execute it. Auto selection redirects it to dynamic
+Text-to-Cypher; explicit template mode rejects it without executing a data query.
 
 JSON Schema is a format/capability contract, not sufficient write protection by
 itself. Semantic review can be wrong; database privileges/configuration remain

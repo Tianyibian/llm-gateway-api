@@ -46,6 +46,23 @@ def test_maps_only_selected_evidence():
     assert answer.mapped_evidence == mapper.ainvoke.await_count == 1
 
 
+def test_empty_lookup_passes_its_question_and_limitations_to_map_reduce():
+    service, mapper, reducer = generator()
+    text = "Empty rows mean no matches in this snapshot, not universal nonexistence.\n[]"
+    retrieved = result(evidence(text=text)).model_copy(update={
+        "trace": [{"task_id": "T1", "question": "What computers are in the catalog?"}],
+    })
+    reducer.ainvoke.return_value = {"status": "answered", "paragraphs": [
+        {"text": "No matching computers were found in this snapshot.", "evidence_ids": ["E1"]},
+    ]}
+    answer = asyncio.run(service.generate("What computers do you sell?", retrieved))
+    context = json.loads(mapper.ainvoke.call_args.args[0]["context"])
+    assert context["retrieval_question"] == retrieved.trace[0]["question"]
+    assert answer.status == "complete" and answer.cited_evidence_ids == ["E1"]
+    quotes = json.loads(reducer.ainvoke.call_args.args[0]["context"])["evidence"][0]["quotes"]
+    assert "[]" in quotes and any("snapshot" in quote for quote in quotes)
+
+
 @pytest.mark.parametrize("invalid", ["invented quote", "Acme supplies Sensor. Revenue: 999.99."])
 def test_fabricated_map_excerpt_stops_before_reduce(invalid):
     service, mapper, reducer = generator()

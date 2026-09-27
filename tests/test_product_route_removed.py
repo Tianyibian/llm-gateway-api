@@ -76,4 +76,5 @@ def test_graph_guardrail_prompt_distinguishes_current_and_historical_prices():
     from app.services.graphrag_guardrail import GraphRAGGuardrail
     prompt = GraphRAGGuardrail.SYSTEM_PROMPT
     assert "Historical order-line prices are not current catalog prices" in prompt
-    assert "Mark these direct lookup requests out_of_scope" in prompt
+    assert "missing attributes or an unknown category are NOT grounds for out_of_scope" in prompt
+    assert "Mark these direct lookup requests out_of_scope" not in prompt

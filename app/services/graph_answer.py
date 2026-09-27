@@ -17,6 +17,9 @@ extracts the exact original text; never return quotes, paraphrases or invented I
 Prefer complete result-row blocks when the question asks for a series/ranking.
 Keep all relevant rows, dates, metrics, units and qualifiers where possible.
 Empty query rows mean no matches in this snapshot, not universal nonexistence.
+Use retrieval_question to interpret which lookup produced the source. An empty
+result for the requested lookup is relevant evidence: retain its empty rows and
+snapshot limitation, instead of discarding it for having no product names.
 Preserve limitations, conflicts, sampled-review context and truncation warnings.
 Do not produce an answer, tool calls, database commands or internal reasoning.
 """
@@ -75,6 +78,7 @@ No external knowledge, raw JSON/Cypher, invented URLs or internal reasoning.
             if len({item.evidence_id for item in result.evidence}) != len(result.evidence) or selected_ids - {item.evidence_id for item in result.evidence}:
                 raise ValueError("Invalid source lineage")
             selected = all_selected[:12]
+            retrieval_questions = {step.get("task_id"): step.get("question") for step in result.trace}
             limited = result.status == "partial" or len(all_selected) > len(selected) or any(
                 (item.execution and item.execution.truncated) or "bounded/truncated: true" in item.text.casefold()
                 for item in selected
@@ -92,6 +96,7 @@ No external knowledge, raw JSON/Cypher, invented URLs or internal reasoning.
                 async with semaphore:
                     raw = await asyncio.wait_for(self.mapper.ainvoke({"context": json.dumps({
                         "question":question, "evidence_id":item.evidence_id, "source":item.source_id,
+                        "retrieval_question": retrieval_questions.get(item.task_id),
                         "excerpts":[{"excerpt_id": key, "text": value} for key, value in excerpts.items()],
                     }, ensure_ascii=False)}), timeout=self.call_timeout)
                 selection = EvidenceSelection.model_validate(raw.model_dump() if isinstance(raw, EvidenceSelection) else raw)

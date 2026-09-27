@@ -21,17 +21,23 @@ class GraphTool(str, Enum):
 
 class GraphTask(GraphContract):
     tool: GraphTool
-    question: str = Field(min_length=1, max_length=2000)
+    question: str = Field(min_length=1, max_length=2000,
+        description="A focused business subquestion, not query implementation instructions. Preserve a single focused original question verbatim; do not add fields, search algorithms or output columns.")
     parent_evidence_ids: list[str] = Field(max_length=12)
+    entity_mentions: list[GraphMention] = Field(default_factory=list, max_length=12,
+        description="Every named entity/category filter in this task, quoted from the task question; use [] for unfiltered queries.")
 
 
 class GraphPlan(GraphContract):
-    action: Literal["retrieve", "finish", "clarify"]
+    action: Literal["retrieve", "finish", "clarify", "data_unavailable"]
     tasks: list[GraphTask] = Field(max_length=3)
     evidence_ids: list[str] = Field(max_length=12)
+    missing_product_data: list[Literal["current_price", "live_stock", "specifications", "compatibility"]] = Field(default_factory=list, max_length=4)
 
     @model_validator(mode="after")
     def consistent_action(self):
+        if (self.action == "data_unavailable") != bool(self.missing_product_data):
+            raise ValueError("Only data_unavailable plans must name missing product capabilities")
         if (self.action == "retrieve") != bool(self.tasks):
             raise ValueError("Only retrieve plans must have tasks")
         if self.action == "finish" and not self.evidence_ids:

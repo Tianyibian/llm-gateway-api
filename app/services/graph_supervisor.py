@@ -12,17 +12,7 @@ from app.models.graph_supervisor import (
 )
 from app.models.graphrag import GraphGuardrailRequest
 from app.services.graphrag_guardrail import GraphRAGGuardrail, scope_stop_message
-from app.services.errors import LLMConfigurationError
-
-
-TOOL_CAPABILITIES = {
-    GraphTool.PREDEFINED_CYPHER: ("neo4j", "query_relationships"),
-    GraphTool.TEXT_TO_CYPHER: ("neo4j", "query_relationships"),
-    GraphTool.NEO4J: ("neo4j", "query_relationships"),
-    GraphTool.MS_LOCAL: ("microsoft_graphrag", "local_search"),
-    GraphTool.MS_GLOBAL: ("microsoft_graphrag", "global_search"),
-    GraphTool.MS_DRIFT: ("microsoft_graphrag", "drift_search"),
-}
+from app.services.errors import EntityClarificationRequired, LLMConfigurationError
 
 
 class GraphRetrievalTool(Protocol):
@@ -58,13 +48,35 @@ Do not expand scope, invent entities, generate SQL/Cypher, or request writes.
 Decompose composite requests into focused subtasks and choose a registered tool
 for each. There are no catalog/sales/review specialist agents in this workflow.
 Use predefined_cypher ONLY for an exact match to one of these fixed templates:
-supplier of one named product; products in one named category; OTHER products
+supplier of one named product; OTHER products
 sharing a named product's supplier; product or supplier revenue rankings; monthly
 revenue AND units. Sales templates allow all data or one explicit calendar year,
 but NO entity filters, arbitrary date bounds, units-only rankings or extra conditions.
 Use text_to_cypher for other supported catalog traversals, counts, filtered sales
 or aggregations over ingested orders/order lines. It compiles a constrained plan,
 not arbitrary executable code. Never generate Cypher yourself.
+Product queries use this branch, including catalog browsing. A user-supplied
+partial category or product name can use a contains filter in text_to_cypher;
+do not invent a full canonical name to force a predefined exact-name template.
+Never use predefined category_products. Product/category browsing uses
+text_to_cypher, whose adapter resolves original surface terms against the database
+and asks for clarification if there are multiple candidates. Do not rewrite
+singular/plural forms or guess canonical names yourself.
+A broad browse can query Product/Category without
+name filters. Preserve user terms; discover canonical names through retrieval.
+The Cypher records adapter returns identities (id, name, source) of ONE target
+entity type per task. Related nodes can filter that target, but their names are
+not additional output columns. Do not add 'including categories/suppliers' to a
+product-list request. If the ORIGINAL question explicitly requests multiple
+entity types, decompose those retrievals instead of asking one records task for
+unsupported columns. Product browsing does not implicitly request live stock.
+The current registered adapters do not provide authoritative current_price,
+live_stock, specifications or compatibility data. If a question requires these
+missing fields, action=data_unavailable with missing_product_data naming them,
+tasks=[] and evidence_ids=[]. Do not reject business scope, invent values,
+substitute historical revenue/reviews or issue unsupported queries. This response
+explains that the full request cannot be answered; do not claim the other parts
+of a composite question were completed. Other actions use missing_product_data=[].
 neo4j_relationships is a legacy automatic-strategy tool; use it only if registered.
 ms_local_search for document-grounded entity context; ms_global_search for
 corpus themes; ms_drift_search for exploratory cross-document investigations.
@@ -76,7 +88,10 @@ different backend or search mode. When exactly one Microsoft search mode is regi
 the application has pinned that mode for this request: use it for approved
 document questions, even if another mode would normally suit the question better.
 Local evidence is not proof of corpus-wide coverage. Never invent a missing
-tool or facts it could have returned. All task questions must be self-contained.
+tool or facts it could have returned. All task questions must be self-contained
+business questions, not instructions for implementing a database query. The
+adapter owns filter selection and compilation. Do not append search algorithms,
+new OR conditions, property names or RETURN/output-column instructions to a task.
 For a single focused question that one tool can answer, preserve its data request
 verbatim rather than expanding it. Do not invent zero-filled months, filters,
 comparisons, currency, complete coverage or optional extra tasks ('if supported').
@@ -90,7 +105,15 @@ retrieve only the prerequisite. Never guess its result. Inspect returned evidenc
 before scheduling dependent tasks in the NEXT round, not in the same batch.
 List parent_evidence_ids for the evidence used to formulate each follow-up.
 New entity names must come from those cited evidence items. Never fabricate IDs.
-Do not repeat the same query/tool pair. Empty results do not prove a fact.
+For every task, declare entity_mentions for every named entity/category used as a
+filter in its question, including partial names; use [] only for unfiltered questions.
+These declarations are checked against the original question and cited adapter
+evidence in Python. There is no second scope-model call after the branch gate.
+Do not repeat the same query/tool pair. An empty, untruncated query result supports
+only 'no matching records in the connected snapshot' for those exact filters;
+it is enough to finish a catalog lookup with that limitation, not evidence that
+the product does not exist anywhere or is out of stock. Empty results do not
+support other positive claims.
 If evidence answers ALL parts of the original question, finish with evidence_ids
 covering every completed subtask and no
 tasks. If a user referent cannot be resolved, clarify with no tasks/evidence_ids.
@@ -99,15 +122,16 @@ The final answer is built from evidence excerpts, not from a model's guesses.
 
 Policy: {policy}
 Registered tools: {tools}
+Trusted Cypher adapter schema (not the broader business-scope vocabulary):
+{cypher_schema}
+Do not request descriptions or other properties absent from this adapter schema.
 """.strip()
 
     def __init__(self, *, chain: Any, guardrail: GraphRAGGuardrail,
                  tools: dict[GraphTool, GraphRetrievalTool] | None = None,
-                 limits: SupervisorLimits | None = None, answer_generator=None,
-                 task_guardrail: GraphRAGGuardrail | None = None):
+                 limits: SupervisorLimits | None = None, answer_generator=None):
         self._chain = chain
         self.guardrail = guardrail
-        self.task_guardrail = task_guardrail or guardrail
         self.tools = {GraphTool(key): value for key, value in (tools or {}).items()}
         self.limits = limits or SupervisorLimits()
         self.answer_generator = answer_generator
@@ -130,8 +154,27 @@ Registered tools: {tools}
         tools = {key: tool for key, tool in self.tools.items()
                  if key in {GraphTool.NEO4J, GraphTool.PREDEFINED_CYPHER, GraphTool.TEXT_TO_CYPHER, selected}}
         return GraphRAGSupervisor(chain=self._chain, guardrail=self.guardrail,
-            tools=tools, limits=self.limits, answer_generator=self.answer_generator,
-            task_guardrail=self.task_guardrail)
+            tools=tools, limits=self.limits, answer_generator=self.answer_generator)
+
+    def _task_lineage_error(self, task, original_question, parents):
+        """Deterministic declared-reference checks, not another scope assessment.
+
+        Declarations are untrusted, not proof that a free-text task is semantically
+        aligned. Tool adapters remain responsible for query/data-access constraints.
+        """
+        allowed_types = set(self.guardrail.load_policy().entity_types)
+        for mention in task.entity_mentions:
+            if mention.entity_type not in allowed_types or not self.guardrail._mentioned(task.question, mention.text):
+                return "invalid_task_entity"
+            in_root = self.guardrail._mentioned(original_question, mention.text)
+            in_evidence = any(
+                self.guardrail._normalize(mention.text) == self.guardrail._normalize(entity.text)
+                and mention.entity_type == entity.entity_type
+                for parent in parents for entity in parent.entities
+            )
+            if not in_root and not in_evidence:
+                return "entity_without_lineage"
+        return None
 
     @staticmethod
     def _progress(**payload):
@@ -225,9 +268,12 @@ Registered tools: {tools}
     def _build_graph(self):
         async def plan(state):
             try:
+                from app.services.cypher_compiler import SCHEMA
+
                 raw = await asyncio.wait_for(self._chain.ainvoke({
                     "policy": self.guardrail.load_policy().model_dump_json(),
                     "tools": json.dumps(sorted(tool.value for tool in self.tools)),
+                    "cypher_schema": SCHEMA,
                     "context": json.dumps({
                         "original_question": state["query"],
                         "evidence": [e.model_dump(mode="json") for e in state["evidence"]],
@@ -240,6 +286,14 @@ Registered tools: {tools}
             except Exception:
                 return {"result": self._result(state, "partial" if state["evidence"] else "unavailable", "invalid_or_failed_plan")}
             known = {e.evidence_id for e in state["evidence"]}
+            if value.action == "data_unavailable":
+                labels = {"current_price": "current catalog prices", "live_stock": "real-time inventory",
+                          "specifications": "authoritative technical specifications", "compatibility": "verified compatibility information"}
+                missing = ", ".join(labels[key] for key in dict.fromkeys(value.missing_product_data))
+                return {"result": self._result(state, "unavailable", "product_data_unavailable").model_copy(update={
+                    "answer": "Product questions are supported in this assistant, but the connected data sources do not currently provide "
+                              + missing + ". I cannot fully answer this request from the available data. This does not mean the product is unavailable or out of stock."
+                })}
             if not set(value.evidence_ids).issubset(known):
                 return {"result": self._result(state, "rejected", "fabricated_evidence")}
             if value.action == "finish":
@@ -281,27 +335,11 @@ Registered tools: {tools}
                 if fingerprint in fingerprints:
                     return {"result": self._result(state, "partial", "repeated_task")}
                 fingerprints.append(fingerprint)
-                decision = await self.task_guardrail.evaluate(task.question)
-                if decision.action != "allow":
-                    status = "unavailable" if decision.action == "unavailable" else "rejected"
-                    return {"result": self._result(state, status, "task_scope_not_approved").model_copy(
-                        update={"answer": scope_stop_message(decision.action)},
-                    )}
-                backend, capability = TOOL_CAPABILITIES[task.tool]
-                if decision.backend != backend or capability not in decision.eligible_tools:
-                    return {"result": self._result(state, "rejected", "task_backend_mismatch")}
-                # Newly discovered entities are legal only through cited, adapter-
-                # verified evidence, never through the planner's invented names.
+                # The branch gate has already assessed scope. Validate only the
+                # plan contract/provenance here; do not reclassify each subtask.
                 parents = [evidence_by_id[key] for key in task.parent_evidence_ids]
-                for mention in decision.entity_mentions:
-                    in_root = self.guardrail._mentioned(state["query"], mention.text)
-                    in_evidence = any(
-                        self.guardrail._normalize(mention.text) == self.guardrail._normalize(entity.text)
-                        and mention.entity_type == entity.entity_type
-                        for parent in parents for entity in parent.entities
-                    )
-                    if not in_root and not in_evidence:
-                        return {"result": self._result(state, "rejected", "entity_without_lineage")}
+                if error := self._task_lineage_error(task, state["query"], parents):
+                    return {"result": self._result(state, "rejected", error)}
 
             semaphore = asyncio.Semaphore(self.limits.max_parallel)
 
@@ -326,6 +364,10 @@ Registered tools: {tools}
                         self._progress(stage="completed", task_id=task_id, tool=task.tool.value,
                                        evidence_count=len(checked), status="complete")
                         return checked, None
+                    except EntityClarificationRequired as exc:
+                        self._progress(stage="completed", task_id=task_id, tool=task.tool.value,
+                                       status="clarify", error="entity_ambiguous", clarification=str(exc))
+                        return [], {"reason_code": "entity_ambiguous", "clarification": str(exc)}
                     except LLMConfigurationError as exc:
                         # Only known public reason codes may leave the adapter.
                         allowed = {"cypher_semantic_check_failed", "invalid_graph_plan_or_result",
@@ -352,11 +394,17 @@ Registered tools: {tools}
                     ))
                 trace.append({"task_id": task_id, "tool": task.tool.value,
                               "question": task.question, "parent_evidence_ids": task.parent_evidence_ids,
-                              "evidence_count": len(rows), "error": error})
+                              "evidence_count": len(rows),
+                              "error": error["reason_code"] if isinstance(error, dict) else error,
+                              **({"clarification": error["clarification"]} if isinstance(error, dict) else {})})
             update = {"evidence": evidence, "trace": trace, "seen_tasks": fingerprints,
                       "rounds": state["rounds"] + 1,
                       "tool_calls": state["tool_calls"] + len(tasks)}
-            if any(error for _, error in results):
+            clarifications = [error["clarification"] for _, error in results if isinstance(error, dict)]
+            if clarifications:
+                update["result"] = self._result({**state, **update}, "clarify", "entity_ambiguous").model_copy(
+                    update={"answer": "\n".join(clarifications)})
+            elif any(error for _, error in results):
                 update["result"] = self._result({**state, **update}, "partial" if evidence else "unavailable", "retrieval_failed")
             return update
 

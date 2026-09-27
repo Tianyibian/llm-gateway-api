@@ -18,8 +18,9 @@ The older classes remain for compatibility and regression tests only.
    tools and parent evidence IDs. Up to three independent tasks may run in the
    first round. Dependent tasks wait for actual evidence in a later round.
 4. The executor validates the whole batch before starting any tool: registered
-   tool, strict per-task backend guard, parent IDs, grounded entity names,
-   duplicates and budgets. It then dispatches directly to tool adapters.
+   tool, parent IDs, declared entity-name provenance, duplicates and budgets.
+   There is no subtask scope-model call. It dispatches directly to tool adapters,
+   which retain schema, semantic-query and read-only execution validation.
 5. Retrieved evidence and execution traces return to the planner. It may retrieve
    another bounded step, finish with supporting evidence, or request clarification.
    Selected follow-up evidence brings its declared prerequisite sources into
@@ -60,6 +61,10 @@ The scope decision is streamed before task execution begins, rather than waiting
 for the whole nested graph to complete. Final answer text is still buffered until
 citation validation, then delivered in SSE segments; it is not live model-token streaming.
 
+Scope is assessed once per branch entry, including the standalone query API and
+multi-round investigations. See [branch scope policy](branch-guardrails.md).
+Planner-declared entity references are checked deterministically; declarations
+are not proof that every entity was declared or that a task matches user intent.
 Scope, decomposition and semantic coverage still involve model judgments.
 Citation validation verifies source IDs, not universal factual entailment.
 The Microsoft index is sampled; neither mode supports exact population statistics.

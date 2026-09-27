@@ -2,15 +2,14 @@
 
 Production uses a [direct task planner](graph-task-planner.md).
 The root scope-only gate permits supported cross-backend composite questions but
-does not grant tool capabilities. The backend-selection checks below remain
-mandatory for every proposed subtask before individual tool calls.
+does not grant database permissions. Scope is assessed once at branch entry,
+not again for each supervisor subtask. See [branch scope policy](branch-guardrails.md).
 
 ## Current implementation
 
 The assistant's `graph_rag_search` branch now contains a LangGraph subgraph
 with a semantic scope gate. Other assistant branches do not use this gate.
-The root gate assesses scope only. For each planned retrieval task, a stricter
-guard selects either `neo4j` or `microsoft_graphrag` using three inputs:
+The root gate assesses scope using three inputs:
 
 1. A server-owned, read-only business scope definition.
 2. An approved domain schema and backend capability descriptions.
@@ -25,13 +24,14 @@ that records exist.
 The LangChain pipeline is `ChatPromptTemplate | model.with_structured_output`.
 Its output is validated again with Pydantic and deterministic Python checks:
 allowed entity types, directed relationships, grounded name mentions, detected
-risks, confidence threshold, and backend/intent compatibility. Requests cannot
+risks and confidence threshold. The planner selects tools using server-owned
+capability descriptions; there is no second scope classifier. Requests cannot
 override the server policy or supply execution permissions.
 
 | Decision | Meaning |
 |---|---|
-| `allow` | Within the approved scope; includes a recommended backend and eligible tools. |
-| `clarify` | Mixed tasks, missing referents, low confidence, or an incompatible backend choice. |
+| `allow` | Within the approved scope; the root scope-only gate leaves tool selection to the planner. |
+| `clarify` | Mixed tasks, missing referents or low confidence. |
 | `reject` | Outside the scope, unsupported schema, ungrounded extraction, or a detected risk. |
 | `unavailable` | Model timeout, provider failure, or malformed model output; never bypass the gate. |
 
@@ -172,8 +172,8 @@ whitespace trimmed) and a server-computed `scope_approved` boolean. The guardrai
 does not generate or rewrite a question or supply a decomposition. Its detailed
 diagnostics remain available for observability but are not passed to the planner.
 Only the supervisor creates subtask questions and chooses their tools. Each
-proposed subtask still undergoes scope, capability, and evidence-lineage checks
-before execution. `scope_approved` is an internal argument, never a client-settable
+proposed subtask still undergoes tool-registration, contract and declared-reference
+checks before execution, but no scope-model reassessment. `scope_approved` is an internal argument, never a client-settable
 request field. Rejection, clarification, and assessment failure all stop entry.
 
 Root decisions of `reject` or `clarify` immediately return the fixed English
@@ -202,18 +202,20 @@ in the first round; prerequisite-dependent tasks wait for real results.
 Dependent tasks run in later rounds. There are no runtime-generated arbitrary
 tools, SQL, Cypher, or executable code.
 
-All proposed tasks must be revalidated. New entities introduced by retrieval
-need traceable evidence, not fabricated model names. The entire batch is checked
-before any retrieval begins: registered tool, scope decision, backend/tool match,
-known parent evidence IDs, and original-question/cited-evidence entity lineage.
+All proposed tasks must satisfy their structured contracts. Declared entities
+introduced by retrieval need traceable evidence, not fabricated model names.
+The entire batch is checked before retrieval: registered tools, known parent
+evidence IDs, and original-question/cited-evidence provenance of declared entities.
+This is deterministic validation, not a second scope assessment. Entity declarations
+do not independently prove that all named entities were declared by the planner.
 The model still makes semantic judgments, including when evidence is sufficient;
 these checks cannot mathematically prove relevance or answer completeness.
 
 `SupervisorLimits` defaults to 3 retrieval rounds, 6 retrieval calls, 3 parallel
 workers, 3 evidence items per call, 2,000 characters per excerpt, a 30-second
 planner/tool timeout, and a 120-second supervisor timeout. There can be at most
-4 planner invocations and 6 per-task scope checks, in addition to the initial
-scope check. The initial guardrail has its own configured timeout. Provider
+4 planner invocations and one initial scope check, with no per-task scope calls.
+The initial guardrail has its own configured timeout. Provider
 retries and internal DRIFT operations are not individual retrieval calls in this
 counter; real adapters must impose their own internal request/token budgets.
 The application factory uses 90-second call and 480-second total supervisor

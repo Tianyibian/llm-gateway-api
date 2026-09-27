@@ -34,7 +34,10 @@ The request field `graphrag_search_mode` restricts the review specialist to one
 Microsoft mode without mutating shared engines. See [Local vs Global](local-global-search.md).
 Neo4j still selects template-first or constrained Text-to-Cypher internally.
 Schema/parameter checks, semantic review, EXPLAIN, timeouts and read-only database
-controls remain. Each tool task undergoes strict backend-aware guard validation.
+controls remain. The retained hierarchy also inherits a single branch-entry scope
+decision: no assignment-level or specialist tool-task scope-model calls. Declared
+entity references, parent evidence IDs and role-specific tool allowlists are
+validated deterministically before dispatch.
 Scope, decomposition and semantic completeness remain model judgments, not proofs.
 
 Production limits: three supervisor rounds, three concurrent specialists and six

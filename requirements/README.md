@@ -8,11 +8,14 @@ remain in `requirements.txt` for the existing Docker and CI entry points.
 | `langchain.txt` | Base app plus LangChain/LangGraph | `.venv-langchain` |
 | `neo4j.txt` | LangChain app plus Neo4j driver | `.venv-langchain` |
 | `snowflake.txt` | LangChain app plus Snowflake support | `.venv-langchain` |
+| `reranker.txt` | Local policy Cross-Encoder inference | `.venv-langchain` |
 | `graphrag.txt` | Version-pinned Microsoft GraphRAG | `.venv-graphrag` only |
 | `graphrag-source.txt` | Editable GraphRAG source packages; provision dependencies first | `.venv-graphrag` only |
 
 ```bash
 .venv-langchain/bin/python -m pip install -r requirements/neo4j.txt
+.venv-langchain/bin/python -m pip install -r requirements/reranker.txt
+.venv-langchain/bin/python -m app.cli.prepare_policy_reranker
 .venv-graphrag/bin/python -m pip install -r requirements/graphrag.txt
 ```
 

@@ -126,6 +126,7 @@ async def _stream_assistant(
             image_mime_type=image_mime_type,
             **({"file_document": file_document} if file_document is not None else {}),
             **({"graphrag_search_mode": request.graphrag_search_mode} if request.graphrag_search_mode != "local" else {}),
+            **({"policy_filters": request.policy_filters} if request.policy_filters is not None else {}),
         ):
             if event_name == "delta":
                 assistant_chunks.append(payload.get("content", ""))

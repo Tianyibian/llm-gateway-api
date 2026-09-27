@@ -35,6 +35,41 @@ test('No execution history is invented before receiving events', () => {
   assert.equal(view.events.children.length, 0);
 });
 
+test('Policy reranker is distinguished from RRF and confidence', () => {
+  const { inspector } = runtime();
+  const view = inspector.create();
+  inspector.record(view, 'Policy ensemble retrieval', {metadata_filters: {source_types: ['pdf']},
+    documents: [{score_type: 'cross_encoder', score: -1.2}]});
+  assert.match(view.events.textContent, /Hybrid retrieval → metadata filter → Cross-Encoder/);
+  assert.match(view.events.textContent, /not confidence percentages/);
+  assert.match(view.events.textContent, /pdf/);
+});
+
+test('Database entity resolution is displayed as text without inventing a template', () => {
+  const { inspector } = runtime();
+  const view = inspector.create();
+  inspector.record(view, 'Supervisor', {status: 'complete', rounds: 1, tool_calls: 1, trace: [],
+    answer_evidence_ids: ['E1'], evidence: [{evidence_id: 'E1', tool: 'text_to_cypher',
+      source_id: 'test', text: 'catalog rows', execution: {query_mode: 'text_to_cypher',
+        template_id: null, cypher: 'MATCH ...', parameters: {}, row_count: 10, truncated: false,
+        entity_resolutions: [{surface: 'speakers', name: '<b>Smart Speaker</b>', label: 'Category', entity_id: 'Category:7'}]}}]});
+  assert.match(view.events.textContent, /speakers → <b>Smart Speaker<\/b>/);
+  assert.doesNotMatch(view.events.textContent, /category_products/);
+});
+
+test('Policy gate and ensemble explain actual retrieval without inventing graph agents', () => {
+  const { inspector } = runtime();
+  const view = inspector.create();
+  inspector.record(view, 'Policy guardrail', {action: 'reject', allowed: false});
+  assert.match(view.overview.textContent, /Stopped before retrieval/);
+  inspector.record(view, 'Policy guardrail', {action: 'allow', allowed: true, scope: 'in_scope'});
+  inspector.record(view, 'Policy ensemble retrieval', {documents: [{title: 'Return Policy'}]});
+  assert.match(view.events.textContent, /Vector \+ BM25, fused with RRF/);
+  assert.match(view.events.textContent, /not answer confidence/);
+  assert.match(view.overview.textContent, /1 Knowledge Base excerpts/);
+  assert.doesNotMatch(view.overview.textContent, /reviews_agent|supervisor/);
+});
+
 test('Direct task progress names the actual tool without inventing an agent', () => {
   const { inspector } = runtime();
   const view = inspector.create();

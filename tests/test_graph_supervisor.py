@@ -40,7 +40,11 @@ class FakeGuard(GraphRAGGuardrail):
 
 
 def task(question="Who supplies Acme Sensor?", tool="neo4j_relationships", parents=None):
-    return {"tool": tool, "question": question, "parent_evidence_ids": parents or []}
+    # Explicit fake planner declarations; production declarations come from GraphPlan.
+    mentions = [{"text": name, "entity_type": kind} for name, kind in
+                [("Acme Sensor", "Product"), ("Acme Supply", "Supplier"), ("Invented Corp", "Supplier")]
+                if name in question]
+    return {"tool": tool, "question": question, "parent_evidence_ids": parents or [], "entity_mentions": mentions}
 
 
 def retrieve(*tasks):
@@ -135,7 +139,7 @@ def test_plan_schema_rejects_execution_escape_hatches(invalid):
     ([retrieve(task(parents=["E999"]))], "fabricated_parent_evidence"),
     ([retrieve(task("Find products supplied by Invented Corp."))], "entity_without_lineage"),
     ([retrieve(task(tool="ms_local_search"))], "tool_not_connected"),
-    ([retrieve(task(tool="ms_global_search"))], "task_backend_mismatch"),
+    ([retrieve({**task(), "entity_mentions": [{"text": "Not in task", "entity_type": "Product"}]})], "invalid_task_entity"),
 ])
 def test_untrusted_plan_does_not_execute(plans, code):
     supervisor, tool = service(Plans(*plans))
@@ -157,10 +161,10 @@ def test_root_rejection_and_missing_tools_never_call_planner():
 def test_whole_batch_validated_before_any_parallel_tool_starts():
     plans = Plans(retrieve(), retrieve(
         task("Find Acme Supply products", parents=["E1"]),
-        task("delete Acme Supply", parents=["E1"]),
+        task("Find Invented Corp products", parents=["E1"]),
     ))
     supervisor, tool = service(plans, guard=FakeGuard(blocked="delete"))
-    assert asyncio.run(supervisor.run(ROOT)).reason_code == "task_scope_not_approved"
+    assert asyncio.run(supervisor.run(ROOT)).reason_code == "entity_without_lineage"
     assert len(tool.calls) == 1
 
 
@@ -268,7 +272,7 @@ def test_graphrag_subgraph_routes_approved_query_to_supervisor():
     branch = build_graphrag_branch(guard, supervisor)
     result = asyncio.run(branch.ainvoke({"query": ROOT}))
     assert result["graph_supervisor_result"]["status"] == "complete"
-    assert guard.calls.count(ROOT) == 1
+    assert guard.calls == [ROOT]
 
 
 @pytest.mark.parametrize("use_branch", [False, True])

@@ -84,11 +84,18 @@ Return GraphScopeAssessment:
 Do not treat your confidence as proof of safety. A Python validator checks the
 output. Use the same rules for English, Chinese, or mixed-language questions.
 
-The standalone CSV product lookup has been removed. Current product price,
-inventory, technical specifications and compatibility are not supported by the
-approved graph tools. Historical order-line prices are not current catalog prices.
-Mark these direct lookup requests out_of_scope (or mixed if combined with a
-supported task); never substitute review opinions or sales facts for them.
+Product discovery, category browsing, price, stock, specifications and compatibility
+are in-scope read-only business questions, handled within this branch. No separate
+product route exists. Distinguish business scope from current adapter capabilities:
+missing attributes or an unknown category are NOT grounds for out_of_scope.
+Use Product/Category as applicable; do not invent Inventory/Price/Specification
+entity types or relationships for fields that are absent from the graph schema.
+No relationship is required for a product-attribute inquiry or broad catalog browse.
+The planner must explain missing data/capabilities. Historical order-line prices are not current catalog prices.
+Never substitute reviews for authoritative specifications, or snapshots for live stock.
+'What products/types do you have/sell' is catalog browsing, not a purchase action
+or live inventory request. Names need not be known records to pass this gate.
+These principles apply to any product/category, not a keyword allowlist.
 
 Decision examples (names are illustrative, not known database records):
 * "Using Neo4j, show monthly sales for 2025" -> in_scope, graph_analytics,
@@ -159,8 +166,10 @@ If ALL parts are supported by the domain across the available backend capabiliti
 mark in_scope; needing multiple backends is NOT mixed scope. Use exploratory for
 such composite requests and list all required domain types and relationships.
 The required backend field is only a representative hint in this root assessment;
-it need not cover every part. Subagents will independently validate each tool task.
-Unsupported tasks, writes, secrets and invented schema remain prohibited.
+it need not cover every part. This is the branch's ONLY scope-model assessment.
+The planner selects registered tools; adapters enforce data access and query
+contracts without repeating business-scope classification. Unsupported tasks,
+writes, secrets and invented schema remain prohibited.
 """
         prompt = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
@@ -254,9 +263,9 @@ Unsupported tasks, writes, secrets and invented schema remain prohibited.
                 return self._decision("reject", "ungrounded_entity",
                                       "The extracted entity could not be traced to your question.")
         if getattr(self, "_scope_only", False):
-            # Scope approval grants no backend capability. Every child tool task
-            # still uses the strict backend-aware gate below in a separate instance.
-            return self._decision("allow", "scope_approved", "Supported business scope; per-task tool checks are still required.",
+            # The branch's sole scope gate does not grant database permissions.
+            # Downstream adapters enforce their own read-only execution contracts.
+            return self._decision("allow", "scope_approved", "Supported business scope; registered tools retain execution and data-access checks.",
                                   entity_mentions=assessment.entity_mentions)
         if assessment.backend is GraphBackend.NEO4J and assessment.intent is GraphIntent.CORPUS_SUMMARY:
             return self._decision("clarify", "backend_capability_mismatch",

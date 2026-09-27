@@ -70,7 +70,7 @@ avoid the additional dynamic-plan generation call, not all model calls.
 | Template | Semantics |
 | --- | --- |
 | `product_supplier` | Supplier of one exactly named product |
-| `category_products` | Products in one exactly named category |
+| `category_products` | Legacy dictionary entry; disabled in the query service. Product/category browsing uses Text-to-Cypher with entity resolution. |
 | `shared_supplier_products` | Other products sharing a product's supplier |
 | `revenue_by_product` | Net-revenue product ranking, all data or one year |
 | `revenue_by_supplier` | Net-revenue supplier ranking, all data or one year |

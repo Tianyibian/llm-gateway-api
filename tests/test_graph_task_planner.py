@@ -67,14 +67,17 @@ def test_finish_includes_declared_prerequisites_of_selected_followup():
     assert result.answer_evidence_ids == ["E1", "E2"]
 
 
-def test_root_and_task_guards_are_distinct_and_preserved_by_mode_selection():
+def test_only_root_scope_guard_is_preserved_by_mode_selection():
     tool = FakeTool()
     guard = FakeGuard(blocked="Count")
-    svc = supervisor([retrieve(task("Count products", "text_to_cypher"))], tool, task_guardrail=guard)
+    svc = supervisor([retrieve(task("Count products", "text_to_cypher")), finish()], tool)
+    svc.guardrail = guard
     selected = svc.with_search_mode()
-    assert selected.task_guardrail is guard
-    assert asyncio.run(selected.run(ROOT)).reason_code == "task_scope_not_approved"
-    assert tool.calls == []
+    assert selected.guardrail is guard
+    assert not hasattr(selected, "task_guardrail")
+    assert asyncio.run(selected.run(ROOT)).status == "complete"
+    assert guard.calls == [ROOT]
+    assert tool.calls == ["Count products"]
 
 
 def test_root_rejection_never_calls_planner_or_tools():

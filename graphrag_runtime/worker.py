@@ -27,12 +27,14 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def prepare(root, source):
+def prepare(root, source, *, max_documents=64, max_input_bytes=200_000):
     if root.exists():
         raise FileExistsError("Choose a new workspace")
+    if not 1 <= max_documents <= 2000 or not 1 <= max_input_bytes <= 10_000_000:
+        raise ValueError("Invalid explicit corpus limits")
     files = sorted((source / "input").glob("*.txt"))
-    if not 1 <= len(files) <= 64 or sum(p.stat().st_size for p in files) > 200_000:
-        raise ValueError("Small-corpus limit exceeded")
+    if not 1 <= len(files) <= max_documents or sum(p.stat().st_size for p in files) > max_input_bytes:
+        raise ValueError("Corpus limit exceeded; review size before raising explicit limits")
     if any(p.is_symlink() for p in files):
         raise ValueError("Symlink inputs are not allowed")
     root.mkdir(parents=True)
@@ -47,7 +49,16 @@ def prepare(root, source):
         "approval": "explicit_cli_approval", "source": source.name,
         "documents": {p.name: digest(p) for p in files},
         "limitations": "Sampled catalog and unverified reviews; not authoritative policies or population statistics.",
+        "limits": {"max_documents": max_documents, "max_input_bytes": max_input_bytes},
+        "provenance_sha256": {},
     }
+    for filename in ("manifest.json", "review_sources.json"):
+        path = source / filename
+        if path.is_file():
+            if path.is_symlink():
+                raise ValueError("Symlink provenance is not allowed")
+            shutil.copyfile(path, root / filename)
+            manifest["provenance_sha256"][filename] = digest(path)
     (root / "corpus_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return {"prepared": True, "document_count": len(files), "index_built": False}
 
@@ -57,6 +68,9 @@ def check_inputs(root):
     files = {p.name: digest(p) for p in (root / "input").glob("*.txt")}
     if files != manifest["documents"]:
         raise ValueError("Approved inputs changed")
+    for filename, expected in manifest.get("provenance_sha256", {}).items():
+        if filename not in {"manifest.json", "review_sources.json"} or digest(root / filename) != expected:
+            raise ValueError("Approved provenance changed")
     return manifest
 
 
@@ -202,6 +216,9 @@ def main():
     parser.add_argument("--root", required=True)
     parser.add_argument("--source")
     parser.add_argument("--approve-reviewed-inputs", action="store_true")
+    parser.add_argument("--max-documents", type=int, default=64)
+    parser.add_argument("--max-input-bytes", type=int, default=200_000)
+    parser.add_argument("--index-timeout-seconds", type=int, default=900)
     parser.add_argument("--method", choices=["local", "global", "drift"], default="local")
     parser.add_argument("--query")
     parser.add_argument("--output")
@@ -215,9 +232,12 @@ def main():
             if args.action == "prepare":
                 if not args.source or not args.approve_reviewed_inputs:
                     raise ValueError("Review and explicitly approve the input corpus first")
-                result = prepare(root, Path(args.source).resolve())
+                result = prepare(root, Path(args.source).resolve(), max_documents=args.max_documents,
+                                 max_input_bytes=args.max_input_bytes)
             elif args.action == "index":
-                result = asyncio.run(asyncio.wait_for(build(root), timeout=900))
+                if not 1 <= args.index_timeout_seconds <= 7200:
+                    raise ValueError("Index timeout must be between 1 and 7200 seconds")
+                result = asyncio.run(asyncio.wait_for(build(root), timeout=args.index_timeout_seconds))
             elif args.action == "status":
                 result = inspect_index(root)
             elif args.action == "verify":

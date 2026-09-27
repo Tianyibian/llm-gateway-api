@@ -6,6 +6,7 @@ from typing import Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from app.models.policy_filters import PolicyMetadataFilters
 
 
 class Message(BaseModel):
@@ -118,6 +119,7 @@ class AssistantRequest(ClassificationRequest):
     user_id: str = Field(min_length=1, max_length=255)
     conversation_id: Optional[UUID] = None
     graphrag_search_mode: Literal["local", "global"] = "local"
+    policy_filters: PolicyMetadataFilters | None = None
 
     @field_validator("user_id")
     @classmethod

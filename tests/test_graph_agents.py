@@ -16,7 +16,8 @@ REVIEWS = "Summarize support themes for Acme Sensor."
 
 
 def assignment(role="catalog_agent", question=CATALOG, parents=None):
-    return {"agent": role, "question": question, "parent_evidence_ids": parents or []}
+    return {"agent": role, "question": question, "parent_evidence_ids": parents or [],
+            "entity_mentions": task(question)["entity_mentions"]}
 
 
 def delegate(*tasks):
@@ -56,6 +57,8 @@ def test_supervisor_delegates_two_independent_goals_and_agents_choose_tools():
     assert reviews.engine._chain.inputs[0]["original_question"] == REVIEWS
     assert catalog.engine._chain.inputs[0]["evidence"] == reviews.engine._chain.inputs[0]["evidence"] == []
     assert len(plans.inputs[1]["agent_runs"]) == 2
+    assert service.guardrail.calls == [ROOT]
+    assert catalog.engine.guardrail.calls == reviews.engine.guardrail.calls == []
 
 
 def test_dependent_agent_runs_in_next_round_with_parent_lineage():
@@ -154,7 +157,7 @@ def test_factory_construction_provides_separate_specialist_graphs():
     class Model:
         def with_structured_output(self, schema):
             return RunnableLambda(lambda _: None)
-    service = HierarchicalGraphSupervisor.from_model(Model(), guardrail=FakeGuard(), task_guardrail=FakeGuard(),
+    service = HierarchicalGraphSupervisor.from_model(Model(), guardrail=FakeGuard(),
         tools={GraphTool.NEO4J: FakeTool(), GraphTool.MS_LOCAL: FakeTool(), GraphTool.MS_GLOBAL: FakeTool()})
     assert set(service.agents) == set(AgentRole)
     assert len({id(agent.engine._graph) for agent in service.agents.values()}) == 3

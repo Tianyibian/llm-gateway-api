@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from app.models.graphrag import GraphContract
+from app.models.graphrag import GraphContract, GraphMention
 
 
 class AgentRole(str, Enum):
@@ -17,6 +17,7 @@ class AgentAssignment(GraphContract):
     agent: AgentRole
     question: str = Field(min_length=1, max_length=2000)
     parent_evidence_ids: list[str] = Field(max_length=12)
+    entity_mentions: list[GraphMention] = Field(default_factory=list, max_length=12)
 
 
 class DelegationPlan(GraphContract):

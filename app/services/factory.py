@@ -26,6 +26,7 @@ from app.services.vision_service import OpenAIVisionService
 from app.services.graphrag_guardrail import GraphRAGGuardrail
 from app.services.graph_supervisor import GraphRAGSupervisor
 from app.services.clarification_service import ClarificationService
+from app.services.policy_guardrail import PolicyGuardrail
 from app.services.graph_answer import GraphAnswerGenerator
 from app.services.microsoft_graphrag import MicrosoftGraphRAGClient, MicrosoftGraphRAGTool, MODES
 from app.models.graph_supervisor import SupervisorLimits, GraphTool
@@ -126,7 +127,6 @@ class LLMServiceFactory:
         )
         return GraphRAGSupervisor.from_model(
             client, guardrail=self._guardrail_from_model(client, provider, scope_only=True),
-            task_guardrail=self._guardrail_from_model(client, provider),
             tools=self.create_graph_retrieval_tools(client) if tools is None else tools,
             answer_generator=GraphAnswerGenerator.from_model(client, timeout=self.settings.graph_answer_timeout_seconds),
             limits=SupervisorLimits(call_timeout_seconds=90, timeout_seconds=480),
@@ -229,12 +229,15 @@ class LLMServiceFactory:
             model_client=answer_client,
             vision_service=vision_service,
             knowledge_retriever=knowledge_retriever,
+            policy_guardrail=PolicyGuardrail.from_model(
+                classifier_client, timeout=self.settings.policy_guardrail_timeout_seconds,
+                min_confidence=self.settings.policy_guardrail_min_confidence,
+            ),
             analytics_planner=analytics_planner,
             analytics_service=analytics_service,
             graph_guardrail=graph_guardrail,
             graph_supervisor=GraphRAGSupervisor.from_model(
                 classifier_client, guardrail=graph_guardrail,
-                task_guardrail=self._guardrail_from_model(classifier_client, provider),
                 tools=self.create_graph_retrieval_tools(classifier_client),
                 answer_generator=GraphAnswerGenerator.from_model(answer_client, timeout=self.settings.graph_answer_timeout_seconds),
                 limits=SupervisorLimits(call_timeout_seconds=90, timeout_seconds=480),
@@ -275,11 +278,17 @@ class LLMServiceFactory:
         )
 
     def create_knowledge_retriever(self) -> KnowledgeRetriever:
-        """Create the public Knowledge Base pgvector retriever."""
+        """Create the public Knowledge Base vector/BM25 ensemble retriever."""
+        from app.services.policy_reranker import PolicyCrossEncoder
         return KnowledgeRetriever(
             session_factory=async_session_factory,
             embedding_service=self.create_embedding_service(),
             default_k=self.settings.rag_retrieval_k,
+            candidate_k=self.settings.rag_ensemble_candidate_k,
+            max_corpus_chunks=self.settings.rag_bm25_max_corpus_chunks,
+            reranker=PolicyCrossEncoder(model_path=self.settings.rag_reranker_model_path,
+                timeout=self.settings.rag_reranker_timeout_seconds) if self.settings.rag_reranker_enabled else None,
+            context_max_characters=self.settings.rag_context_max_characters,
         )
 
     def create_knowledge_ingestion_service(self) -> KnowledgeIngestionService:

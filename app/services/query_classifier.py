@@ -12,7 +12,7 @@ class QueryClassifier:
     SYSTEM_PROMPT = """
 You are a routing classifier for an e-commerce customer-support system.
 Select exactly one route for the user's query:
-The standalone CSV product lookup is no longer available. Do not invent a route.
+There is no separate product route. Product queries belong to graph_rag_search.
 
 - file_query: Questions explicitly about a user-uploaded or attached document,
   such as summarize this file, explain the attached PDF, or find a fact in my file.
@@ -45,7 +45,12 @@ The standalone CSV product lookup is no longer available. Do not invent a route.
   They do not support entity-name filters or arbitrary analytics.
   A query mentioning a supplier is not automatically a graph query.
   Do not choose this for a single product's current price, specifications, or inventory.
-- graph_rag_search: The request needs business entity relationships (such as
+- graph_rag_search: Product discovery, category browsing, product details,
+  prices, stock, specifications and compatibility all belong here, including
+  unfamiliar categories that may have no matching data. 'What do you have/sell'
+  means browsing the catalog unless real-time inventory is explicitly requested.
+  A broad catalog question does not require a specific product name.
+  Also handles business entity relationships (such as
   which supplier supplies a named product), a multi-step relationship
   investigation, or a corpus-wide synthesis of smart-home support themes.
   Also use this when a relationship traversal defines the cohort before counting
@@ -53,10 +58,9 @@ The standalone CSV product lookup is no longer available. Do not invent a route.
   supplier. Exact revenue is supported by Neo4j, not Microsoft document GraphRAG.
   An explicit request to run a supported analysis in Neo4j/Cypher for comparison
   also belongs here. Arbitrary database commands are not authorized by routing.
-  Also route direct product price, stock, specification or compatibility requests
-  here for scope assessment: the independent CSV lookup has been removed. The
-  guardrail must decline facts outside the approved graph capabilities. Do not
-  send unsupported business facts to general_search. Simple policy questions
+  Business scope is separate from available data: missing price/stock/spec fields
+  must be explained in this branch, not treated as an out-of-scope request or
+  answered using general model knowledge. Simple policy questions
   still belong to policy_search.
   This branch has a scope guardrail and a bounded supervisor; only configured,
   verified graph retrieval adapters can execute.

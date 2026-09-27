@@ -1,0 +1,4 @@
+# Local CPU Cross-Encoder inference; weights are prepared separately.
+sentence-transformers==5.7.0
+transformers==4.57.6
+torch>=2.6,<3

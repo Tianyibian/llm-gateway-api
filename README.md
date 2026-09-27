@@ -59,7 +59,7 @@ multimodal image understanding, pytest, Postman, and idempotent data ingestion.
 | **Provider-agnostic** | `LLMServiceFactory` returns an adapter chosen from configuration. Swapping OpenAI ⇄ Ollama requires no client or endpoint changes. |
 | **Optional orchestration** | Use the direct provider adapters by default, or enable LangChain through configuration without changing routes, persistence, or clients. |
 | **LangGraph assistant** | Classifies each query, follows a conditional graph branch, and streams a grounded answer with visible route and source metadata. |
-| **Knowledge Base RAG** | Loads CSV, HTML, PDF, and DOCX sources, creates local or OpenAI embeddings, retrieves with pgvector HNSW search, and returns citations. |
+| **Knowledge Base RAG** | Scope-guarded pgvector + BM25 hybrid retrieval, RRF, metadata filtering, local Cross-Encoder reranking and cited answers. |
 | **Snowflake analytics** | Routes aggregate business questions through a structured plan and allowlisted SQL templates, then grounds the answer in warehouse rows. |
 | **GraphRAG task planning** | A guarded LangGraph planner decomposes business queries into subtasks and directly dispatches predefined Cypher, constrained Text-to-Cypher and Microsoft GraphRAG tools. Includes bounded parallelism, evidence-driven dependencies and final MapReduce synthesis. See [architecture](docs/graph-task-planner.md). |
 | **Checked graph answers** | Schema-constrained Cypher, independent question-alignment review and Neo4j EXPLAIN preflight; parallel evidence mapping, answer reduction and source-ID validation produce a cited natural-language answer. |
@@ -148,6 +148,10 @@ data: "[DONE]"
 ```
 
 Interactive docs are served at `/docs`; liveness at `/health`.
+
+Each business branch has at most one scope guardrail; the GraphRAG supervisor
+does not repeat scope assessment for subtasks. Database read-only and query
+validation checks remain. See [branch scope policy](docs/branch-guardrails.md).
 
 See [GraphRAG guardrail and backend selection](docs/graphrag.md) for the policy,
 real-model evaluation commands, Postman checks, and Microsoft GraphRAG indexing
@@ -295,12 +299,13 @@ branch and its Neo4j retrieval tools, not an independent CSV search. SSE events 
 conversation history from PostgreSQL. After a successful stream, it atomically
 saves the user query and complete assistant answer as one turn.
 
-The independent CSV product lookup has been removed. Current product prices,
-inventory, specifications and compatibility are not supported by the graph tools;
-those requests go to GraphRAG scope assessment and must be declined rather than
-answered from general model knowledge. `Business_data/` remains the source for
+The independent CSV product route has been removed, not product-query capability.
+Catalog discovery and product questions belong to GraphRAG. Current adapters lack
+authoritative current prices, live inventory, technical specifications and verified
+compatibility. Such questions pass business scope but receive an explicit data
+limitation, not invented facts or an out-of-scope rejection. `Business_data/` remains the source for
 Neo4j ingestion, Microsoft GraphRAG preparation and analytics comparisons.
-Policy documents still use the pgvector Knowledge Base retrieval path. Images
+Policy documents use the guarded pgvector + BM25 Knowledge Base ensemble. Images
 use the vision branch. The separate `file_query` branch supports request-scoped
 TXT, Markdown and text-based PDF questions with excerpt/page citations. Files
 are not added to shared indexes; reattach for follow-ups. See the
@@ -418,13 +423,23 @@ embedding API credits. Run ingestion again after changing the embedding model
 or provider. Retrieval refuses to mix vectors from a different configured
 embedding space.
 
-`policy_search` unifies return/refund policies and company support knowledge. Only
+`policy_search` unifies return/refund policies and company support knowledge. A
+fail-closed scope guardrail runs before retrieval, including when clarification
+dispatches to this branch. The retriever combines exact pgvector cosine rankings
+and BM25 lexical rankings using reciprocal-rank fusion (RRF), deduplicating by
+chunk ID. The bounded prototype scans the eligible corpus rather than using the
+available HNSW index, so BM25 can recover hits outside vector candidates. Only
 `visibility=public` documents are eligible for assistant retrieval. Internal
 support DOCX files are indexed with `visibility=internal` as preparation for
 future role-based access, but the public assistant's SQL filter cannot return
 them. Each SSE `sources` event includes title, file, type, category, PDF page,
-chunk index, and similarity score; the answer prompt cites those excerpts as
-`[1]`, `[2]`, and so on.
+chunk index, vector/BM25 ranks, RRF provenance and Cross-Encoder relevance scores
+(not confidence percentages). After hybrid fusion, explicit metadata filters narrow
+the candidate set and the local reranker selects top context chunks; the answer
+prompt cites only these selected excerpts as `[1]`, `[2]`, and so on.
+Prepare the local model with the [reranker setup guide](docs/policy-reranker.md).
+See [Policy ensemble retrieval](docs/policy-ensemble.md) for configuration,
+limitations and separate deterministic/live testing commands.
 
 ### Image analysis
 

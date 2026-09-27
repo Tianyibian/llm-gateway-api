@@ -16,7 +16,7 @@ from tests.test_cypher_checks import summary
 
 
 @pytest.mark.parametrize("strategy,expected", [
-    ("text_to_cypher", ["prepare_query", "generate_cypher", "validate_cypher", "execute_cypher"]),
+    ("text_to_cypher", ["prepare_query", "generate_cypher", "resolve_entities", "validate_cypher", "execute_cypher"]),
     ("template", ["prepare_query", "compile_template", "validate_cypher", "execute_cypher"]),
 ])
 def test_actual_langgraph_node_order(strategy, expected):

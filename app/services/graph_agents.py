@@ -45,8 +45,8 @@ class SpecialistAgent:
         return cls(role=role, engine=engine)
 
     async def run(self, question):
-        # run_approved does not skip tool-task guards. Assignment scope is checked
-        # by the parent, then every proposed tool call is independently checked.
+        # Internal delegation inherits the branch approval; no nested scope calls.
+        # Tool registration, provenance and adapter execution checks still apply.
         return await self.engine.run_approved(question, scope_approved=True)
 
 
@@ -77,6 +77,7 @@ If a task depends on an unknown product, supplier, ranking or other prior result
 first delegate only the prerequisite. Inspect its evidence, then delegate the
 dependent task in a later round citing parent_evidence_ids. Never guess a referent.
 Known entities must be exact names in the original question or cited evidence.
+Declare those entity_mentions in each assignment; use [] for unfiltered questions.
 Keep every original constraint and calendar year. No invented zero-filled months,
 currencies, filters, comparisons or optional extras. Preserve simple goals verbatim.
 Keep assignments concise: one business question, not a paragraph of extra
@@ -98,9 +99,9 @@ Return only DelegationPlan. Answers are synthesized later with MapReduce.
         super().__init__(tools=None, **kwargs)
 
     @classmethod
-    def from_model(cls, model, *, guardrail, task_guardrail, tools, answer_generator=None, **kwargs):
+    def from_model(cls, model, *, guardrail, tools, answer_generator=None, **kwargs):
         from langchain_core.prompts import ChatPromptTemplate
-        agents = {role: SpecialistAgent.from_model(model, role=role, guardrail=task_guardrail, tools=tools)
+        agents = {role: SpecialistAgent.from_model(model, role=role, guardrail=guardrail, tools=tools)
                   for role in AgentRole if set(tools) & ROLE_TOOLS[role]}
         prompt = ChatPromptTemplate.from_messages([("system", cls.SYSTEM_PROMPT), ("human", "{context}")])
         return cls(chain=prompt | model.with_structured_output(DelegationPlan), agents=agents,
@@ -170,16 +171,9 @@ Return only DelegationPlan. Answers are synthesized later with MapReduce.
                 if fingerprint in seen:
                     return {"result": self._result(state, "partial", "repeated_assignment")}
                 seen.append(fingerprint)
-                decision = await self.guardrail.evaluate(task.question)
-                if decision.action != "allow":
-                    return {"result": self._result(state, "unavailable" if decision.action == "unavailable" else "rejected", "assignment_scope_not_approved")}
                 parents = [by_id[key] for key in task.parent_evidence_ids]
-                for mention in decision.entity_mentions:
-                    if not self.guardrail._mentioned(state["query"], mention.text) and not any(
-                        self.guardrail._normalize(mention.text) == self.guardrail._normalize(entity.text)
-                        and mention.entity_type == entity.entity_type for parent in parents for entity in parent.entities
-                    ):
-                        return {"result": self._result(state, "rejected", "entity_without_lineage")}
+                if error := self._task_lineage_error(task, state["query"], parents):
+                    return {"result": self._result(state, "rejected", error)}
 
             semaphore = asyncio.Semaphore(self.limits.max_parallel)
             async def execute(index, task):

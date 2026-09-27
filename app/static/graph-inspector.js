@@ -62,6 +62,24 @@
       section.append(element("p", payload.action === "allow"
         ? "Scope passed. The supervisor receives the original question."
         : "This branch stopped before planning or retrieval."));
+    } else if (name === "Policy guardrail") {
+      inspector.overview.hidden = false;
+      inspector.overview.replaceChildren(element("strong", `Policy scope: ${payload.action}`));
+      inspector.overview.append(element("p", payload.allowed === true
+        ? "Scope approved. Waiting for vector + BM25 retrieval."
+        : "Stopped before retrieval and answer generation.", "execution-note"));
+      section.append(element("p", `Decision: ${payload.action}`));
+      if (payload.scope) section.append(element("p", `Scope: ${payload.scope}`));
+    } else if (name === "Policy ensemble retrieval") {
+      const count = (payload.documents ?? []).length;
+      section.append(element("p", `Vector + BM25, fused with RRF · ${count} excerpts`));
+      if ((payload.documents ?? []).some(item => item.score_type === "cross_encoder")) {
+        section.append(element("p", "Hybrid retrieval → metadata filter → Cross-Encoder reranker → top context excerpts"));
+        section.append(element("p", "Cross-Encoder scores are relevance logits, not confidence percentages."));
+      }
+      section.append(element("p", "RRF is a ranking score, not answer confidence."));
+      section.append(element("p", `Metadata filters: ${JSON.stringify(payload.metadata_filters ?? {})} · public documents only`, "execution-note"));
+      inspector.overview.append(element("p", `${count} Knowledge Base excerpts returned by the ensemble retriever.`));
     } else if (name === "Clarification guardrail") {
       section.append(element("p", `Decision: ${payload.action}`));
       if ((payload.missing ?? []).length) section.append(element("p", `Missing: ${payload.missing.join(", ")}`));
@@ -139,6 +157,9 @@
             card.append(element("pre", JSON.stringify(run.parameters, null, 2)));
             card.append(element("p", `Rows: ${run.row_count} · Truncated: ${run.truncated}`, "execution-note"));
             card.append(element("p", `Checks passed: ${(run.checks ?? []).join(", ") || "not reported"}`, "execution-note"));
+            for (const binding of run.entity_resolutions ?? []) {
+              card.append(element("p", `Entity resolved: ${binding.surface} → ${binding.name} (${binding.label}, ${binding.entity_id})`, "execution-note"));
+            }
           }
           section.append(card);
         }

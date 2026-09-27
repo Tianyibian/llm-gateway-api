@@ -8,6 +8,15 @@ from app.services.cypher_checks import validate_explain
 from tests.test_neo4j_queries import service
 
 
+def test_generation_and_validation_share_catalog_semantics_without_skipping_checks():
+    from app.services.cypher_checks import CATALOG_QUERY_SEMANTICS, REVIEW_PROMPT
+    from app.services.neo4j_service import TextToCypherService
+
+    assert CATALOG_QUERY_SEMANTICS in REVIEW_PROMPT
+    assert CATALOG_QUERY_SEMANTICS in TextToCypherService.SYSTEM_PROMPT
+    assert "preserves_all_constraints" in REVIEW_PROMPT
+
+
 def summary(**updates):
     return SimpleNamespace(**(dict(query_type="r", plan={"args": {"EstimatedRows": 10}, "children": []}, notifications=[]) | updates))
 

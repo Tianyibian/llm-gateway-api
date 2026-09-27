@@ -6,6 +6,7 @@ from itertools import combinations
 
 from app.models.cypher import CypherPlan
 from app.services.graphrag_guardrail import GraphRAGGuardrail
+from app.services.entity_resolution import EntityBinding
 
 SCHEMA_VERSION = "aster-business-graph-v2"
 EDGES = {
@@ -34,7 +35,8 @@ class CompiledCypher:
     grouping: str
 
 
-def compile_plan(plan: CypherPlan, *, question: str, dataset: str) -> CompiledCypher:
+def compile_plan(plan: CypherPlan, *, question: str, dataset: str,
+                 bindings: tuple[EntityBinding, ...] = ()) -> CompiledCypher:
     # Revalidate copied/constructed models so callers cannot bypass the contract.
     plan = CypherPlan.model_validate(plan.model_dump())
     if plan.action != "query" or not plan.nodes:
@@ -68,12 +70,24 @@ def compile_plan(plan: CypherPlan, *, question: str, dataset: str) -> CompiledCy
         key = next(iter(nodes))
         patterns = [f"({key}:{nodes[key]})"]
     parameters: dict[str, str | int] = {"dataset": dataset, "limit": plan.limit + 1}
+    resolved = {binding.filter_index: binding for binding in bindings}
+    if len(resolved) != len(bindings) or any(i < 0 or i >= len(plan.filters) for i in resolved):
+        raise ValueError("Invalid entity binding indices")
     conditions = [f"{key}.dataset = $dataset" for key in nodes]
     for index, item in enumerate(plan.filters):
         if nodes.get(item.node) not in {"Product", "Supplier", "Category"}:
             raise ValueError("Only public catalog names can be filtered")
         if not GraphRAGGuardrail._mentioned(question, item.value):
             raise ValueError("Filter entity was not mentioned in the question")
+        if index in resolved:
+            binding = resolved[index]
+            if (binding.surface != item.value or binding.label != nodes[item.node]
+                    or binding.dataset != dataset or not binding.entity_id):
+                raise ValueError("Entity binding does not belong to this filter and dataset")
+            parameter = f"entity{index}"
+            parameters[parameter] = binding.entity_id
+            conditions.append(f"{item.node}.id = ${parameter}")
+            continue
         parameter = f"name{index}"
         parameters[parameter] = item.value
         operator = "=" if item.operator == "equals" else "CONTAINS"

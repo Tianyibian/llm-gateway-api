@@ -270,7 +270,8 @@ function showKnowledgeSources(container, payload) {
 
   const title = document.createElement("div");
   title.className = "source-title";
-  title.textContent = "Knowledge Base sources";
+  title.textContent = payload.backend === "policy_ensemble"
+    ? "Knowledge Base sources · Vector + BM25 · RRF" : "Knowledge Base sources";
   container.append(title);
 
   const uniqueSources = new Map();
@@ -288,9 +289,11 @@ function showKnowledgeSources(container, payload) {
     name.textContent = source.title;
     const meta = document.createElement("span");
     const page = source.page ? ` · page ${source.page}` : "";
-    const relevance = Number.isFinite(Number(source.score))
-      ? ` · ${Math.round(Number(source.score) * 100)}% match`
-      : "";
+    const relevance = source.score_type === "cross_encoder"
+      ? ` · reranker #${source.reranker_rank} · score ${Number(source.score).toFixed(3)} · hybrid #${source.hybrid_rank}`
+      : source.score_type === "hybrid_rrf"
+      ? ` · RRF ${Number(source.score).toFixed(4)} · vector #${source.vector_rank ?? "—"} · BM25 #${source.bm25_rank ?? "—"}`
+      : Number.isFinite(Number(source.score)) ? ` · similarity ${Number(source.score).toFixed(3)}` : "";
     meta.textContent = `${source.category ?? source.source_type}${page}${relevance}`;
     details.append(name, meta);
     card.append(marker, details);
@@ -340,6 +343,8 @@ function handleEvent(eventName, payload, message) {
       : "Preparing a response…";
   } else if (eventName === "guardrail") {
     GraphInspector.record(message.inspector, "Guardrail", payload);
+  } else if (eventName === "policy_guardrail") {
+    GraphInspector.record(message.inspector, "Policy guardrail", payload);
   } else if (eventName === "clarification") {
     GraphInspector.record(message.inspector, "Clarification guardrail", payload);
   } else if (eventName === "supervisor") {
@@ -365,6 +370,7 @@ function handleEvent(eventName, payload, message) {
         : "Could not produce a validated answer.";
     }
   } else if (eventName === "sources") {
+    if (payload.backend === "policy_ensemble") GraphInspector.record(message.inspector, "Policy ensemble retrieval", payload);
     if (payload.backend === "uploaded_file") showFileSources(message.sources, payload);
     else if (payload.backend === "snowflake") showAnalyticsRows(message.sources, payload);
     else if (payload.documents?.length) showKnowledgeSources(message.sources, payload);

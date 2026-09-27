@@ -2,6 +2,10 @@ class LLMConfigurationError(RuntimeError):
     """Raised when the selected LLM provider cannot be configured."""
 
 
+class EntityClarificationRequired(RuntimeError):
+    """An adapter found multiple database candidates; ask rather than guess."""
+
+
 class ConversationNotFoundError(LookupError):
     """Raised when a conversation does not exist or belongs to another user."""
 

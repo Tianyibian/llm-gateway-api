@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     rag_chunk_size: int = 1200
     rag_chunk_overlap: int = 200
     rag_retrieval_k: int = 5
+    rag_ensemble_candidate_k: int = Field(default=20, ge=1, le=100)
+    rag_bm25_max_corpus_chunks: int = Field(default=10000, ge=1, le=100000)
+    rag_reranker_enabled: bool = True
+    rag_reranker_model_path: str = ".local/policy-reranker"
+    rag_reranker_timeout_seconds: float = Field(default=60, gt=0, le=180)
+    rag_context_max_characters: int = Field(default=16000, ge=1000, le=100000)
+    policy_guardrail_timeout_seconds: float = Field(default=45, gt=0, le=180)
+    policy_guardrail_min_confidence: float = Field(default=0.75, ge=0, le=1)
     graphrag_guardrail_timeout_seconds: float = 90.0
     graphrag_guardrail_min_confidence: float = 0.75
     microsoft_graphrag_enabled: bool = False

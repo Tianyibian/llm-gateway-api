@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import asyncio
+import math
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -12,9 +14,11 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db.models import KnowledgeChunk, KnowledgeDocument
+from app.models.policy_filters import PolicyMetadataFilters
 from app.services.embedding_service import EmbeddingService
 from app.services.errors import KnowledgeBaseNotReadyError
 from app.services.knowledge_loader import KnowledgeBaseLoader, KnowledgeChunker
+from app.services.ensemble_retriever import bm25_rank, reciprocal_rank_fusion
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -48,6 +52,15 @@ class RetrievedKnowledge:
     page: int | None
     score: float
     chunk_index: int
+    score_type: str = "cosine_similarity"
+    vector_rank: int | None = None
+    bm25_rank: int | None = None
+    vector_score: float | None = None
+    bm25_score: float | None = None
+    rrf_score: float | None = None
+    hybrid_rank: int | None = None
+    reranker_rank: int | None = None
+    reranker_model: str | None = None
 
     def citation(self) -> dict[str, object]:
         return {
@@ -59,6 +72,15 @@ class RetrievedKnowledge:
             "page": self.page,
             "score": round(self.score, 4),
             "chunk_index": self.chunk_index,
+            "score_type": self.score_type,
+            "vector_rank": self.vector_rank,
+            "bm25_rank": self.bm25_rank,
+            "vector_score": self.vector_score,
+            "bm25_score": self.bm25_score,
+            "rrf_score": self.rrf_score,
+            "hybrid_rank": self.hybrid_rank,
+            "reranker_rank": self.reranker_rank,
+            "reranker_model": self.reranker_model,
         }
 
 
@@ -217,7 +239,11 @@ class KnowledgeIngestionService:
 
 
 class KnowledgeRetriever:
-    """Retrieve public Knowledge Base chunks using pgvector cosine distance."""
+    """Hybrid RRF candidates -> metadata narrowing -> reranking -> top context.
+
+    This bounded prototype scans the small public corpus. It does not build a
+    BM25 index from vector-only candidates or silently truncate the corpus.
+    """
 
     def __init__(
         self,
@@ -225,10 +251,18 @@ class KnowledgeRetriever:
         session_factory: async_sessionmaker[AsyncSession],
         embedding_service: EmbeddingService,
         default_k: int = 5,
+        candidate_k: int = 20,
+        max_corpus_chunks: int = 10000,
+        reranker=None,
+        context_max_characters: int = 16000,
     ) -> None:
         self._session_factory = session_factory
         self.embedding_service = embedding_service
         self.default_k = default_k
+        self.candidate_k = candidate_k
+        self.max_corpus_chunks = max_corpus_chunks
+        self.reranker = reranker
+        self.context_max_characters = context_max_characters
 
     async def status(self) -> KnowledgeStatus:
         compatible_documents = (
@@ -264,13 +298,23 @@ class KnowledgeRetriever:
         *,
         k: int | None = None,
         category: str | None = None,
+        filters: PolicyMetadataFilters | None = None,
     ) -> list[RetrievedKnowledge]:
+        if not query.strip():
+            raise ValueError("A non-empty retrieval query is required")
+        result_k = self.default_k if k is None else k
+        if not 1 <= result_k <= 100:
+            raise ValueError("Retrieval k must be between 1 and 100")
+        metadata_filters = PolicyMetadataFilters.model_validate(
+            filters.model_dump() if isinstance(filters, PolicyMetadataFilters) else ({} if filters is None else filters)
+        )
         query_vector = await self.embedding_service.embed_query(query)
         distance = KnowledgeChunk.embedding.cosine_distance(query_vector).label(
             "distance"
         )
         statement = (
-            select(KnowledgeChunk, KnowledgeDocument, distance)
+            select(KnowledgeChunk.id, KnowledgeChunk.content,
+                   KnowledgeChunk.chunk_index, KnowledgeDocument, distance)
             .join(
                 KnowledgeDocument,
                 KnowledgeDocument.id == KnowledgeChunk.document_id,
@@ -280,34 +324,96 @@ class KnowledgeRetriever:
                 KnowledgeDocument.embedding_provider == self.embedding_service.provider,
                 KnowledgeDocument.embedding_model == self.embedding_service.model,
             )
-            .order_by(distance)
-            .limit(k or self.default_k)
+            # Read the complete bounded corpus independently of ANN candidates.
+            .order_by(KnowledgeChunk.id)
+            .limit(self.max_corpus_chunks + 1)
         )
-        if category:
-            statement = statement.where(KnowledgeDocument.category == category)
-
         async with self._session_factory() as session:
             rows = (await session.execute(statement)).all()
         if not rows:
+            if category or metadata_filters.model_dump(exclude_none=True):
+                # No matching eligible documents is not an ingestion failure and
+                # must never fall back to a broader unfiltered search.
+                return []
             raise KnowledgeBaseNotReadyError(
                 "The Knowledge Base has no searchable chunks. Run the ingestion command."
             )
+        if len(rows) > self.max_corpus_chunks:
+            raise KnowledgeBaseNotReadyError(
+                "The Knowledge Base exceeds the bounded BM25 corpus limit. "
+                "Configure an indexed lexical backend before searching this corpus."
+            )
+
+        candidate_k = max(self.candidate_k, result_k)
+        by_id = {str(row[0]): row for row in rows}
+        vector_rows = sorted(rows, key=lambda row: (float(row[4]), str(row[0])))
+        vector_ids = [str(row[0]) for row in vector_rows[:candidate_k]]
+        lexical = await asyncio.to_thread(
+            bm25_rank, query,
+            {str(row[0]): f"{row[3].title}\n{row[1]}" for row in rows},
+            limit=candidate_k,
+        )
+        lexical_ids = [key for key, _ in lexical]
+        vector_ranks = {key: rank for rank, key in enumerate(vector_ids, 1)}
+        lexical_ranks = {key: rank for rank, key in enumerate(lexical_ids, 1)}
+        lexical_scores = dict(lexical)
+        # Fuse the entire bounded union before applying user metadata constraints.
+        # Permissions and embedding compatibility were already enforced in SQL.
+        fused = reciprocal_rank_fusion(vector_ids, lexical_ids, limit=2 * candidate_k)
+        hybrid_ranks = {key: rank for rank, (key, _) in enumerate(fused, 1)}
+        def permitted(key):
+            document = by_id[key][3]
+            return ((not category or document.category == category)
+                and (metadata_filters.categories is None or document.category in metadata_filters.categories)
+                and (metadata_filters.source_types is None or document.source_type in metadata_filters.source_types)
+                and (metadata_filters.source_paths is None or document.source_path in metadata_filters.source_paths))
+        filtered = [(key, score) for key, score in fused if permitted(key)]
+        if not filtered:
+            return []  # Never broaden filters or pad context with excluded records.
+        scores = {}
+        if self.reranker is not None:
+            values = await self.reranker.score(query, [
+                f"{by_id[key][3].title}\n{by_id[key][1]}" for key, _ in filtered])
+            if len(values) != len(filtered) or any(not math.isfinite(float(value)) for value in values):
+                raise KnowledgeBaseNotReadyError("The policy reranker returned invalid scores.")
+            scores = {key: float(value) for (key, _), value in zip(filtered, values)}
+            filtered.sort(key=lambda item: (-scores[item[0]], hybrid_ranks[item[0]], item[0]))
 
         results: list[RetrievedKnowledge] = []
-        for chunk, document, raw_distance in rows:
+        remaining = self.context_max_characters
+        for rank, (key, score) in enumerate(filtered, 1):
+            _, content, chunk_index, document, raw_distance = by_id[key]
             metadata = document.document_metadata or {}
-            score = max(0.0, min(1.0, 1.0 - float(raw_distance)))
+            # Preserve whole evidence chunks; bound context characters including
+            # a conservative allowance for source headers/citations (not tokens).
+            size = len(content) + len(document.title) + len(str(metadata.get("source_file", document.source_path))) + 150
+            if size > remaining:
+                continue
+            remaining -= size
             results.append(
                 RetrievedKnowledge(
-                    content=chunk.content,
+                    content=content,
                     title=document.title,
                     source_path=document.source_path,
                     source_file=str(metadata.get("source_file", document.source_path)),
                     source_type=document.source_type,
                     category=document.category,
                     page=(int(metadata["page"]) if metadata.get("page") else None),
-                    score=score,
-                    chunk_index=chunk.chunk_index,
+                    score=scores.get(key, score),
+                    chunk_index=chunk_index,
+                    score_type="cross_encoder" if self.reranker is not None else "hybrid_rrf",
+                    vector_rank=vector_ranks.get(key),
+                    bm25_rank=lexical_ranks.get(key),
+                    vector_score=1.0 - float(raw_distance),
+                    bm25_score=lexical_scores.get(key),
+                    rrf_score=score,
+                    hybrid_rank=hybrid_ranks[key],
+                    reranker_rank=rank if self.reranker is not None else None,
+                    reranker_model=self.reranker.model if self.reranker is not None else None,
                 )
             )
+            if len(results) >= result_k:
+                break
+        if not results:
+            raise KnowledgeBaseNotReadyError("No complete policy excerpt fits the configured context budget.")
         return results
