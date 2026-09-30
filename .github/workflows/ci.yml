@@ -39,13 +39,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Check dependencies and application imports
+        env:
+          LLM_PROVIDER: ollama
+          DATABASE_URL: sqlite+aiosqlite:///./ci_test.db
+        run: |
+          python -m pip check
+          python -c "import langchain, langchain_core, langgraph; from app.main import app; assert app"
+
       - name: Run the test suite
         # The suite runs against temporary SQLite databases with the LLM provider
         # replaced by a deterministic fake, so it needs no API key and no live model.
         env:
           LLM_PROVIDER: ollama
           DATABASE_URL: sqlite+aiosqlite:///./ci_test.db
-        run: pytest -q --maxfail=1
+        run: python -m pytest tests -q --maxfail=1
 
   lint:
     name: Lint & format check

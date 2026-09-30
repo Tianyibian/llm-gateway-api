@@ -1,6 +1,17 @@
 fastapi>=0.115,<1
 uvicorn[standard]>=0.34,<1
 openai>=2.24,<3
+# Core assistant runtime; required by application imports, Docker, and CI.
+langchain>=1,<2
+langchain-core>=1,<2
+langgraph>=1,<2
+langchain-openai>=1,<2
+langchain-ollama>=1,<2
+numpy>=2,<3
+# Driver only: enabling/loading the Neo4j database is a separate setup step.
+neo4j>=5.28,<7
+# Local key-pair preparation and validation (no warehouse connection required).
+cryptography>=42
 pydantic-settings>=2.7,<3
 httpx>=0.28,<1
 python-multipart>=0.0.20,<1

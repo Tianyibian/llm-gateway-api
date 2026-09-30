@@ -11,7 +11,10 @@ steps that it can skip or rearrange.
 - Unsupported selection or generation stops before validation/execution.
 - Rejected validation stops before execution. No automatic repair/retry is added.
 
-`prepare_query` checks the versioned Neo4j snapshot. Dynamic mode bypasses the
+`prepare_query` checks the versioned Neo4j snapshot and reads dataset-scoped
+schema metadata, intersected with the application's allowed read contract.
+The request-local result feeds selection, generation and review; missing or
+incompatible metadata never falls back to a static schema. Dynamic mode bypasses the
 template selector. Template mode uses a structured `CypherSelection` to select an
 exact supported template; it does not fall back to dynamic generation.
 
@@ -25,7 +28,7 @@ Unmatched terms retain their original filters; no nearby category is substituted
 See [product entity resolution](entity-resolution.md) for limits and provenance.
 
 `validate_cypher` re-derives the candidate from the allowlisted plan or template,
-checks exact agreement, asks the semantic reviewer to compare it with the question,
+checks exact agreement and observed-schema compatibility, asks the semantic reviewer to compare it with the question,
 and checks Neo4j's EXPLAIN result. Only query type `r` is accepted; `w`, `rw`, `s`
 and unknown types are rejected. Estimated-row budgets and unknown-schema warnings
 are also checked. Approval is tied to a fingerprint of the candidate and parameters.

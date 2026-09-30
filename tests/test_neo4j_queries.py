@@ -10,6 +10,8 @@ from app.services.cypher_compiler import compile_plan
 from app.services.cypher_templates import TEMPLATES, compile_template
 from app.services.neo4j_service import TextToCypherService
 from app.services.neo4j_data import prepare_business_graph
+from app.services.neo4j_schema import ALLOWED_PROPERTIES, ObservedGraphSchema
+from app.services.cypher_compiler import EDGES
 
 
 def selection(**kwargs):
@@ -28,6 +30,7 @@ def service(selected=None, generated=None, rows=None, failure=False):
     chain = AsyncMock()
     chain.ainvoke.return_value = generated or plan()
     executor = AsyncMock()
+    executor.schema.return_value = ObservedGraphSchema("test", ALLOWED_PROPERTIES, frozenset(EDGES))
     executor.run.side_effect = [( [], {}), RuntimeError("secret-password") if failure else (rows or [], {})]
     reviewer = AsyncMock()
     reviewer.ainvoke.return_value = {"matches_question": True, "preserves_all_constraints": True, "reason_code": "approved"}

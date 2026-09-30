@@ -1,3 +1,2 @@
-# Optional graph backend; install in the existing LangChain environment.
--r langchain.txt
-neo4j>=5.28,<7
+# Compatibility entry point. The base application includes the Neo4j driver.
+-r ../requirements.txt

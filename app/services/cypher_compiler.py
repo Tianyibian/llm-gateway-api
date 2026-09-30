@@ -7,6 +7,7 @@ from itertools import combinations
 from app.models.cypher import CypherPlan
 from app.services.graphrag_guardrail import GraphRAGGuardrail
 from app.services.entity_resolution import EntityBinding
+from app.services.cypher_direction import observed_arrow
 
 SCHEMA_VERSION = "aster-business-graph-v2"
 EDGES = {
@@ -15,6 +16,7 @@ EDGES = {
     ("Order", "CONTAINS", "OrderLine"),
     ("OrderLine", "OF_PRODUCT", "Product"),
 }
+# EDGES/SCHEMA describe the bundled import format, not runtime query directions.
 SCHEMA = """Nodes: Product, Supplier, Category, Order, OrderLine.
 All nodes have id and dataset. Product/Supplier/Category have name and source.
 Order has order_date (date). OrderLine has units (integer) and
@@ -36,6 +38,7 @@ class CompiledCypher:
 
 
 def compile_plan(plan: CypherPlan, *, question: str, dataset: str,
+                 observed_edges: frozenset[tuple[str, str, str]],
                  bindings: tuple[EntityBinding, ...] = ()) -> CompiledCypher:
     # Revalidate copied/constructed models so callers cannot bypass the contract.
     plan = CypherPlan.model_validate(plan.model_dump())
@@ -53,11 +56,10 @@ def compile_plan(plan: CypherPlan, *, question: str, dataset: str,
     for edge in plan.edges:
         if edge.source not in nodes or edge.target not in nodes:
             raise ValueError("Unknown node reference")
-        if (nodes[edge.source], edge.relation, nodes[edge.target]) not in EDGES:
-            raise ValueError("Unknown or reversed relationship")
+        arrow = observed_arrow(nodes[edge.source], edge.relation, nodes[edge.target], observed_edges)
         adjacency[edge.source].add(edge.target)
         adjacency[edge.target].add(edge.source)
-        patterns.append(f"({edge.source}:{nodes[edge.source]})-[:{edge.relation}]->({edge.target}:{nodes[edge.target]})")
+        patterns.append(f"({edge.source}:{nodes[edge.source]}){arrow}({edge.target}:{nodes[edge.target]})")
     seen, pending = set(), [next(iter(nodes))]
     while pending:
         key = pending.pop()

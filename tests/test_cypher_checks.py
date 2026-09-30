@@ -62,7 +62,7 @@ def test_explain_failure_prevents_data_query():
 def test_passed_checks_are_attached_to_execution():
     svc, _, _, executor = service()
     answer = asyncio.run(svc.query("Who supplies Acme Sensor?"))
-    assert answer.execution.checks == ["schema_and_parameters", "question_alignment", "neo4j_explain_read_only", "plan_budget"]
+    assert answer.execution.checks == ["schema_and_parameters", "observed_dataset_schema", "question_alignment", "neo4j_explain_read_only", "plan_budget"]
     executor.explain.assert_awaited_once()
 
 

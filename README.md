@@ -1,14 +1,14 @@
-# LLM Gateway — RAG & LangGraph AI Assistant
+# Smart AI Support — GraphRAG & LangGraph Assistant
 
-Neo4j now supports template-first queries and constrained Text-to-Cypher alongside
-Snowflake analytics and Microsoft GraphRAG. See [query strategies and setup](docs/neo4j-query-strategies.md).
-Business analytics default to Neo4j. Snowflake reporting is selected only with
-both `SNOWFLAKE_ENABLED=true` and `ANALYTICS_BACKEND=snowflake`; database failures
-never silently switch backends.
+A business-support assistant that combines **LangGraph task planning,
+Microsoft GraphRAG, Neo4j Text-to-Cypher, and hybrid policy retrieval** behind
+a FastAPI API and browser chat interface. It routes questions to specialized
+workflows, checks business scope, retrieves supporting evidence, and returns
+cited answers with inspectable execution traces and PostgreSQL conversation memory.
 
-**A production-style Generative AI backend with Retrieval-Augmented Generation
-(RAG), LangChain, LangGraph, streaming LLM APIs, and persistent multi-turn
-memory.**
+Built as a portfolio prototype using synthetic business data. The original
+OpenAI/Ollama streaming gateway remains available through `/api/chat` and
+`/api/reason`; the main assistant experience is `/api/assistant`.
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)](https://fastapi.tiangolo.com/)
@@ -20,14 +20,15 @@ memory.**
 [![Snowflake](https://img.shields.io/badge/Snowflake-analytics-29B5E8)](https://www.snowflake.com/)
 [![Alembic](https://img.shields.io/badge/Alembic-migrations-6BA81E)](https://alembic.sqlalchemy.org/)
 [![Tests](https://img.shields.io/badge/tests-pytest%20%2B%20postman-0A9EDC)](#testing)
-[![License](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 
-LLM Gateway puts a single, stable HTTP contract in front of multiple inference
-backends. Clients always speak the same `messages` format and receive the same
-Server-Sent Event stream, whether the tokens come from the **OpenAI API** or a
-**self-hosted Ollama** model. Conversations are durable: every completed turn is
-written to a relational database, so a client can resume a thread by ID instead
-of replaying history on every request.
+Example workflows include comparing product relationships and sales using
+Neo4j, summarizing review themes with Microsoft GraphRAG, and answering return
+or support-policy questions using reranked Knowledge Base passages. The browser
+shows the selected route, scope decision, planner tasks and cited sources.
+
+**Orchestration, not an autonomous agent swarm:** the active GraphRAG supervisor
+decomposes questions into bounded subtasks and dispatches retrieval tools. It
+does not launch independent `reviews_agent` or `catalog_agent` instances.
 
 New to the codebase? Start with the [project map and reading order](docs/project-map.md).
 Operational guides are indexed in [docs/README.md](docs/README.md).
@@ -55,9 +56,9 @@ multimodal image understanding, pytest, Postman, and idempotent data ingestion.
 
 | | |
 |---|---|
-| **Streaming by default** | Both endpoints emit Server-Sent Events (`metadata` → `delta` → `done`), so tokens render as they are generated. |
+| **SSE interface** | Chat/reason stream provider output. GraphRAG streams progress, validates its final answer, then emits buffered answer chunks rather than raw model tokens. |
 | **Provider-agnostic** | `LLMServiceFactory` returns an adapter chosen from configuration. Swapping OpenAI ⇄ Ollama requires no client or endpoint changes. |
-| **Optional orchestration** | Use the direct provider adapters by default, or enable LangChain through configuration without changing routes, persistence, or clients. |
+| **LangChain integration** | Explicit core dependencies support structured classification and planning. Chat/reason can select native or LangChain provider adapters through configuration. |
 | **LangGraph assistant** | Classifies each query, follows a conditional graph branch, and streams a grounded answer with visible route and source metadata. |
 | **Knowledge Base RAG** | Scope-guarded pgvector + BM25 hybrid retrieval, RRF, metadata filtering, local Cross-Encoder reranking and cited answers. |
 | **Snowflake analytics** | Routes aggregate business questions through a structured plan and allowlisted SQL templates, then grounds the answer in warehouse rows. |
@@ -74,29 +75,32 @@ multimodal image understanding, pytest, Postman, and idempotent data ingestion.
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    UI[Browser chat / FastAPI] --> A[Assistant: modality detection and routing]
+    UI <--> DB[(PostgreSQL conversation memory)]
+    A --> G[GraphRAG scope guardrail]
+    G --> P[Task planner: decompose and inspect evidence]
+    P --> T[Predefined Cypher / Text-to-Cypher / Microsoft GraphRAG]
+    T --> E[Source-backed evidence]
+    E --> P
+    P --> R[Outer MapReduce and citation-ID validation]
+    A --> K[Policy scope guardrail]
+    K --> H[pgvector + BM25 / RRF]
+    H --> F[Metadata filters / Cross-Encoder / top context]
+    F --> L[Grounded policy answer]
+    A --> O[General / clarification / file / image workflows]
+    A --> S[Optional Snowflake analytics]
 ```
-                    ┌──────────────────────────────┐
-   POST /api/chat      │        FastAPI  layer        │
-   POST /api/reason    │  routes · Pydantic schemas   │
-   POST /api/assistant │   SSE · browser frontend    │
-        ──────────► │        SSE  response         │
-                    └───────────────┬──────────────┘
-                                    │
-                    ┌───────────────▼──────────────┐
-                    │     ConversationService      │   load history
-                    │  (async SQLAlchemy · Alembic)│ ◄─────────────►  DB
-                    └───────────────┬──────────────┘   persist turn
-                                    │
-                    ┌───────────────▼──────────────┐
-                    │      LLMServiceFactory       │
-                    │   provider × service type    │
-                    └───────┬──────────────┬───────┘
-                            │              │
-                   ┌────────▼───────┐ ┌────▼───────────┐
-                   │ OpenAIService  │ │ OllamaService  │
-                   │ Responses API  │ │ local /api/chat│
-                   └────────────────┘ └────────────────┘
-```
+
+Microsoft GraphRAG uses an isolated Parquet/LanceDB index, not the Neo4j
+database. Local Search is the default; Global Search is an explicit request
+choice. Global has its own internal MapReduce, while the application's outer
+MapReduce combines evidence across tools. A rejected scope check stops that
+branch before retrieval. Read-only query validation remains separate from scope.
+Neo4j query tools read dataset-scoped schema metadata before planning, intersect
+it with an explicit allowlist, and validate compiled queries against that observed
+schema. New database fields do not automatically become queryable.
 
 **Request flow:** `POST /api/chat` → load stored history → merge with incoming
 messages → factory selects an adapter → provider stream → completed turn saved
@@ -164,17 +168,39 @@ documents the independent graph database, transactional snapshot and two query p
 
 ## Quick start
 
-```bash
-python3.13 -m venv .venv-langchain && source .venv-langchain/bin/activate
-python -m pip install -r requirements/langchain.txt
+### 1. Install and run the core assistant
 
-cp .env.example .env          # then set LLM_PROVIDER (and a key, if using OpenAI)
-docker compose up -d postgres  # start PostgreSQL 17 on localhost:5432
-alembic upgrade head          # create / update the schema
-ollama pull embeddinggemma    # local 768-dimensional embeddings
-python -m app.cli.ingest_knowledge
-uvicorn app.main:app --reload
+Prerequisites: Python 3.13, Docker Compose, and either an OpenAI API key or a
+running Ollama server with a chat model. Python 3.11 is also covered by CI.
+Clone the repository, then run the setup commands from its root:
+
+```bash
+git clone https://github.com/Tianyibian/llm-gateway-api.git
+cd llm-gateway-api
+python3.13 -m venv .venv-langchain
+source .venv-langchain/bin/activate
+python -m pip install -r requirements.txt
+python -m pip check
+
+cp .env.example .env
 ```
+
+Edit `.env` locally: set `LLM_PROVIDER=openai`, a real `OPENAI_API_KEY`, and chat,
+reasoning and vision model IDs available to your account. Alternatively, use
+`LLM_PROVIDER=ollama` and pull the configured chat/reasoning model (the example
+uses `ollama pull qwen3:4b`). Images still require OpenAI. Never commit `.env`.
+
+Then start persistence and the API:
+
+```bash
+docker compose -f compose.yaml up -d postgres
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
+```
+
+This starts the core application, not prebuilt retrieval indexes. Start with a
+general question; policy and graph questions require the setup below. A fresh
+clone does not include local indexes, model weights, secrets or loaded databases.
 
 Open `http://127.0.0.1:8000` for the local Aster assistant interface. It is
 served by FastAPI and requires no separate JavaScript build process.
@@ -189,6 +215,34 @@ curl -N -X POST http://127.0.0.1:8000/api/chat \
 ```
 
 `-N` disables curl buffering so deltas appear as they stream.
+
+### 2. Enable retrieval features
+
+For the complete policy pipeline, leave `RAG_RERANKER_ENABLED=true`, start the
+Ollama server, and run in another terminal with the app environment activated:
+
+```bash
+python -m pip install -r requirements/reranker.txt
+python -m app.cli.prepare_policy_reranker
+ollama pull embeddinggemma
+python -m app.cli.ingest_knowledge
+```
+
+The reranker downloads local weights. Missing weights fail explicitly; they do
+not silently disable reranking. See [policy retrieval](docs/policy-reranker.md).
+
+Other backends are opt-in and require data preparation as well as installation:
+
+| Feature | Dependencies and setup |
+|---|---|
+| Neo4j templates and Text-to-Cypher | Driver included in the root install; follow [database loading and read-only setup](docs/neo4j-query-strategies.md). |
+| Microsoft GraphRAG Local/Global | Separate `.venv-graphrag`, `requirements/graphrag.txt`, then [prepare, index and verify](docs/microsoft-graphrag.md). Indexing calls paid models; begin with a reviewed pilot. |
+| Official GraphRAG source | Initialize the pinned submodule only when needed; follow [source installation](docs/microsoft-graphrag.md#source-installation). |
+| Snowflake analytics | `python -m pip install -r requirements/snowflake.txt`; follow [authentication](docs/snowflake-authentication.md) and the warehouse setup below. |
+
+Business analytics default to Neo4j. Snowflake requires both
+`SNOWFLAKE_ENABLED=true` and `ANALYTICS_BACKEND=snowflake`. Backend failures never
+silently switch databases. Restart the API after configuration changes.
 
 ---
 
@@ -230,7 +284,7 @@ Both providers share one request schema and one SSE contract, so switching is a
 configuration change — clients and tests stay identical. Restart Uvicorn after
 editing `.env`.
 
-### Optional LangChain runtime
+### Provider adapter selection
 
 LangChain is an orchestration layer, not another model provider. With
 `LLM_ORCHESTRATOR=langchain`, the factory still selects OpenAI or Ollama, then
@@ -238,14 +292,10 @@ wraps that provider's LangChain chat model behind the same local `LLMService`
 interface. Conversation persistence, ownership checks, SSE, and API contracts
 do not change.
 
-LangChain 1.x and the assistant graph require Python 3.10 or newer. This project
-uses the Python 3.13 `.venv-langchain` environment for application development:
-
-```bash
-python3.13 -m venv .venv-langchain
-source .venv-langchain/bin/activate
-python -m pip install -r requirements/langchain.txt
-```
+LangChain and LangGraph are installed by the root `requirements.txt`; they are
+required by the assistant even when chat/reason use the native provider adapter.
+`requirements/langchain.txt` remains a compatibility alias, not a separate
+optional runtime installation.
 
 Then set these values in the local `.env` and restart Uvicorn:
 
@@ -294,8 +344,9 @@ START -> detect_modality
 The graph has separate input, output, and overall state schemas. Every node
 returns only its state update. The conditional edge reads `state["route"]` and
 selects the next node. Catalog relationships are handled by the guarded GraphRAG
-branch and its Neo4j retrieval tools, not an independent CSV search. SSE events expose `metadata`, `route`, optional `sources`, real model
-`delta` tokens, and `done`. Before execution, the endpoint loads the owned
+branch and its Neo4j retrieval tools, not an independent CSV search. SSE events expose `metadata`, `route`, optional `sources`, answer
+`delta` chunks, and `done`. GraphRAG answer chunks are emitted after final
+validation; other answer branches stream model output. Before execution, the endpoint loads the owned
 conversation history from PostgreSQL. After a successful stream, it atomically
 saves the user query and complete assistant answer as one turn.
 
@@ -314,7 +365,8 @@ are not added to shared indexes; reattach for follow-ups. See the
 ### Snowflake business analytics
 
 Snowflake is an optional OLAP backend; it does not replace PostgreSQL. The
-assistant routes cross-record aggregation and trend questions to Snowflake,
+assistant can route cross-record aggregation and trend questions to Snowflake
+when explicitly selected with both configuration flags above,
 while conversations and messages remain in the transactional PostgreSQL
 database. The analytics planner returns a validated `AnalyticsQueryPlan`, not
 SQL. The execution service maps its intent to one of four parameterized,
@@ -517,7 +569,9 @@ back to the preserved SQLite URL and restart Uvicorn.
 ## Testing
 
 ```bash
-pytest -q
+python -m pip check
+python -c "import langchain, langgraph; from app.main import app; print(app.title)"
+python -m pytest tests -q
 ```
 
 The `pytest` suite runs against temporary SQLite databases with the provider
@@ -525,15 +579,24 @@ replaced by a deterministic fake, covering routing, request validation, factory
 selection, SSE formatting, ownership rules, atomic turn persistence,
 failed-first-turn cleanup, cascading deletes, history ordering, and Alembic
 upgrade/downgrade, multi-format knowledge loading, chunking, embeddings, and
-grounded citation routing. It consumes no API credits and needs no local model.
+grounded citation routing. It also covers graph planning, constrained Cypher,
+evidence lineage, MapReduce validation, hybrid retrieval, metadata filtering
+and reranker failure behavior. It consumes no API credits and needs no local model.
+Scope collection to `tests/` so upstream submodule tests are not collected.
+CI installs only the root requirements, checks imports and runs this suite on
+Python 3.11 and 3.13. Optional model/index integrations require separate live checks.
+Four Snowflake driver-specific authentication tests skip when
+`requirements/snowflake.txt` is not installed; the remaining warehouse logic
+uses fakes. Installing that extra enables those tests without contacting Snowflake.
 
 The Postman collection (`postman/`) is deliberately **not** mocked: it drives a
 running Uvicorn process against real providers and asserts status, SSE content
 type, the expected provider and service type, streamed output, `[DONE]`, and the
 absence of an error event — including a seven-request stateful conversation flow.
 
-Passing unit tests proves the application logic; the Postman run proves the
-integration.
+Deterministic tests check application contracts, not model quality or live
+service connectivity. Live evaluations require configured backends and may
+incur API costs; see the [testing guides](docs/README.md).
 
 ---
 
@@ -554,7 +617,7 @@ Business_data/                   # Synthetic source CSVs (paths preserved)
 Knowledge Base/                  # Source documents for policy/support RAG
 migrations/                     # Alembic database revisions
 requirements/                   # Optional dependency sets; GraphRAG is isolated
-requirements.txt                # Base app dependencies; Docker/CI entry point
+requirements.txt                # Core app + LangChain/LangGraph; Docker/CI entry point
 notebooks/                      # Exploration notebooks, separate from app code
 scripts/                        # Migration utilities
 └── reference/                   # Legacy preprocessing reference
@@ -579,6 +642,13 @@ Do not run both PostgreSQL Compose stacks against the same port; use an explicit
 
 ## Notes & limits
 
+- This is a portfolio prototype, not a production security or reliability claim.
+  Scope guardrails and citation-ID checks do not prove every answer is factual.
+- Product and sales data are static snapshots, not live stock or price feeds.
+  Microsoft GraphRAG summarizes review evidence; exact sales aggregates use
+  database queries. DRIFT is an experimental low-level adapter, not a UI mode.
+- Optional integrations, indexes and model artifacts need explicit setup. Dependency
+  ranges are not a fully reproducible lockfile; verify each fresh installation.
 - `user_id` is a demonstration ownership boundary, not authentication. A real
   deployment should derive identity from a verified token (e.g. JWT) rather than
   trusting client input.
@@ -589,4 +659,5 @@ Do not run both PostgreSQL Compose stacks against the same port; use an explicit
 
 ## License
 
-MIT
+No project license file is currently included. Third-party dependencies and
+the GraphRAG submodule retain their respective licenses.

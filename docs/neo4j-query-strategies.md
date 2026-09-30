@@ -18,6 +18,47 @@ Router → graph scope guardrail → task decomposition planner
 
 ## Query checks and final answer
 
+### Dynamic, dataset-scoped schema
+
+Before model calls, `Neo4jExecutor.schema()` reads observed labels, property types
+and relationship triples from the configured business dataset. It uses two
+server-owned read-only Cypher queries, not APOC or database-wide schema procedures.
+Only metadata is returned, never property values. The result is intersected with
+the explicit read contract in `app/services/neo4j_schema.py`; unknown labels,
+properties and relationships are not exposed to the model.
+
+The request-local schema is supplied to template selection, dynamic plan generation
+and semantic review. It is refreshed on every tool query, without a shared cache
+or a static-schema fallback. Missing required structures reject the compiled
+query before review/execution. Metadata failures, incompatible types or more than
+64 distinct metadata rows fail closed. The same snapshot-version, timeout, EXPLAIN
+and read-only checks used for business queries also protect metadata reads.
+
+This is an observation of the current dataset, not a schema migration or a guarantee
+that every record has every property. Empty labels/relationships cannot be inferred
+from data; they are conservatively unavailable. Discovery and execution are separate
+reads, not one transaction-wide snapshot; retain the read-only dataset configuration.
+Scans add per-request work, bounded by query timeouts and plan budgets, so a larger
+deployment should add an explicitly invalidated metadata cache or schema registry.
+
+New capabilities still require changes to `CypherPlan`, the compiler and the
+allowlist. The existing branch scope policy is unchanged; schema validation is
+not a second scope guardrail. No new automatic write or schema-migration path exists.
+Successful execution includes `observed_dataset_schema` in its check metadata.
+
+Implementation: `app/services/neo4j_schema.py`, `Neo4jExecutor.schema()` and
+`TextToCypherService` in `app/services/neo4j_service.py`.
+Tests: `tests/test_neo4j_schema.py`. Property types use Neo4j's built-in
+[`valueType()`](https://neo4j.com/docs/cypher-manual/5/functions/scalar/#functions-valueType).
+
+Inspect the model-visible schema without model calls or writes:
+
+```bash
+.venv-langchain/bin/python -m app.cli.inspect_neo4j_schema
+```
+
+### Validation layers
+
 Both query strategies share fail-closed checks:
 
 1. The deterministic compiler validates the schema, grounded parameters, bounded
