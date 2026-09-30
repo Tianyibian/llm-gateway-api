@@ -27,3 +27,7 @@ __pycache__/
 .postman/
 postman/collections/
 postman/globals/
+
+# Standalone QQQ research belongs outside this application repository.
+/quant_tqqq_backtest/
+/qqq-research/
