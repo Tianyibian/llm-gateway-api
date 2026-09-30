@@ -97,7 +97,9 @@ def test_invented_canonical_name_cannot_bypass_original_word_provenance():
 def test_binding_must_match_filter_type_surface_and_dataset(patch):
     binding = EntityBinding(0, "speakers", "Category", "Category:7", "Smart Speaker", "test")
     with pytest.raises(ValueError):
-        compile_plan(category_plan(), question="Which speakers?", dataset="test", bindings=(replace(binding, **patch),))
+        compile_plan(category_plan(), question="Which speakers?", dataset="test",
+                     observed_edges=frozenset({("Product", "BELONGS_TO", "Category")}),
+                     bindings=(replace(binding, **patch),))
 
 
 def test_resolution_does_not_skip_semantic_validation():

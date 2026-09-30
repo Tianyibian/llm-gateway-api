@@ -114,7 +114,7 @@ def test_template_rejects_incompatible_or_ungrounded_arguments(kwargs):
 
 @pytest.mark.parametrize("kwargs", [
     dict(target="n5"), dict(count_node=None), dict(edges=[]),
-    dict(edges=[{"source":"n1", "relation":"SUPPLIED_BY", "target":"n0"}]),
+    dict(edges=[{"source":"n1", "relation":"BELONGS_TO", "target":"n0"}]),
     dict(filters=[{"node":"n0", "operator":"equals", "value":"Invented"}]),
     dict(start_date="2025-01-01"), dict(exclude_same_products=True),
     dict(metric="revenue", count_node=None), dict(metric="records"),
@@ -122,7 +122,7 @@ def test_template_rejects_incompatible_or_ungrounded_arguments(kwargs):
 ])
 def test_dynamic_compiler_rejects_invalid_patterns(kwargs):
     with pytest.raises(ValueError):
-        compile_plan(plan(**kwargs), question="Count products by supplier", dataset="test")
+        compile_plan(plan(**kwargs), question="Count products by supplier", dataset="test", observed_edges=frozenset(EDGES))
 
 
 def test_dynamic_contract_cannot_include_raw_cypher_or_extra_labels():

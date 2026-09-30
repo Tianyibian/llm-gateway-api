@@ -22,6 +22,7 @@ async def evaluate(live_model: bool) -> dict:
     executor = Neo4jExecutor(settings)
     graph = prepare_business_graph(settings.business_data_dir)
     _, snapshot = await executor.run()
+    observed = await executor.schema()
     checks = []
     def check(name, passed):
         checks.append({"check": name, "passed": bool(passed)})
@@ -35,6 +36,8 @@ async def evaluate(live_model: bool) -> dict:
     ]:
         selected = CypherSelection(route="template", template=template, name=None, year=2025, limit=5 if key != "month" else 12)
         compiled = compile_template(selected, question="2025", dataset=settings.neo4j_dataset)
+        compiled = observed.orient_template(compiled)
+        observed.validate_compiled(compiled)
         rows, _ = await executor.run(compiled)
         rows = rows[:selected.limit]
         expected = baseline.query(AnalyticsQueryPlan(intent=intent, start_date=date(2025,1,1), end_date=date(2025,12,31), limit=selected.limit, reason="Independent CSV comparison")).rows
@@ -44,13 +47,16 @@ async def evaluate(live_model: bool) -> dict:
     dynamic = CypherPlan(action="query", nodes=[{"key":"n0", "label":"Product"}, {"key":"n1", "label":"Supplier"}],
         edges=[{"source":"n0", "relation":"SUPPLIED_BY", "target":"n1"}], filters=[], target="n1", count_node="n0",
         metric="count", grouping="entity", start_date=None, end_date=None, limit=20, exclude_same_products=False)
-    rows, _ = await executor.run(compile_plan(dynamic, question="Count products by supplier", dataset=settings.neo4j_dataset))
+    rows, _ = await executor.run(compile_plan(dynamic, question="Count products by supplier",
+                                             dataset=settings.neo4j_dataset, observed_edges=observed.edges))
     expected_counts = Counter(edge["target"] for edge in graph.edges if edge["type"] == "SUPPLIED_BY")
     check("dynamic_counts_equal_csv", {row["id"]: row["count"] for row in rows} == dict(expected_counts))
     # Reads are bounded; all six reviewed templates are parsed/executed by Neo4j.
     names = {node["label"]: node["name"] for node in graph.nodes if "name" in node}
     for template, name in [("product_supplier", names["Product"]), ("category_products", names["Category"]), ("shared_supplier_products", names["Product"])]:
         compiled = compile_template(CypherSelection(route="template", template=template, name=name, year=None, limit=20), question=name, dataset=settings.neo4j_dataset)
+        compiled = observed.orient_template(compiled)
+        observed.validate_compiled(compiled)
         rows, _ = await executor.run(compiled)
         check(f"{template}_real_rows", bool(rows))
     if live_model:

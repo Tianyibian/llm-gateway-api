@@ -55,7 +55,9 @@ def test_even_model_approved_queries_stop_on_non_read_explain(strategy, kind):
 def template_state():
     selected = selection()
     compiled = compile_template(selected, question="Who supplies Acme Sensor?", dataset="test")
-    return {"selection": selected, "question": "Who supplies Acme Sensor?", "compiled": compiled}
+    _, _, _, executor = service()
+    return {"selection": selected, "question": "Who supplies Acme Sensor?", "compiled": compiled,
+            "schema": executor.schema.return_value}
 
 
 @pytest.mark.parametrize("change", ["write", "parameters"])

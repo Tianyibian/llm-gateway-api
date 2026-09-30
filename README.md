@@ -101,6 +101,8 @@ branch before retrieval. Read-only query validation remains separate from scope.
 Neo4j query tools read dataset-scoped schema metadata before planning, intersect
 it with an explicit allowlist, and validate compiled queries against that observed
 schema. New database fields do not automatically become queryable.
+Relationship arrows are aligned to actual Neo4j directions for both dynamic
+plans and predefined templates; missing or ambiguous directions fail closed.
 
 **Request flow:** `POST /api/chat` → load stored history → merge with incoming
 messages → factory selects an adapter → provider stream → completed turn saved

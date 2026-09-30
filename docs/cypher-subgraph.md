@@ -20,6 +20,10 @@ exact supported template; it does not fall back to dynamic generation.
 
 `generate_cypher` asks for a Pydantic `CypherPlan` and validates its original-word
 filters. It does not accept executable query text or entity IDs from the model.
+The compiler aligns relation directions to observed Neo4j triples; the bundled
+ingestion direction is not a query-time authority. Missing or bidirectionally
+ambiguous relationships stop the traversal. Predefined templates receive the
+same arrow-only adaptation before validation, without changing their parameters.
 `resolve_entities` reads a complete bounded catalog per required entity label,
 matches regular English number/case variants and partial token sequences, then
 compiles unique matches to parameterized ID predicates. Ambiguous matches stop
@@ -52,6 +56,8 @@ compiled query or checkpoint. Concurrent calls do not share candidate state.
 3. `TEMPLATES` in `cypher_templates.py` maps each allowed name to reviewed Cypher.
 4. `compile_template()` validates combinations, checks names/years against the
    question, and binds values as driver parameters. Values are not interpolated.
+   `ObservedGraphSchema.orient_template()` then aligns only its arrows with the
+   observed directions. The validator re-derives and compares this adapted query.
 5. The same validation and execution nodes used by dynamic queries are mandatory.
 
 `category_products` remains in the legacy template dictionary for compatibility,

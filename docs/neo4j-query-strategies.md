@@ -46,6 +46,23 @@ allowlist. The existing branch scope policy is unchanged; schema validation is
 not a second scope guardrail. No new automatic write or schema-migration path exists.
 Successful execution includes `observed_dataset_schema` in its check metadata.
 
+Relationship **directions** come from observed triples, not the bundled import's
+`EDGES` constant. The read contract retains an allowlist of relationship types
+and unordered endpoint-label pairs. The compiler aligns each dynamic-plan link
+to the single direction observed for that pair/type. Fixed templates adapt only
+their arrow tokens, preserving filters, projections and bound parameters. The
+validator checks every complete directed triple, including overlapping links
+and left-pointing arrows in shared-supplier patterns. Missing or bidirectional
+ambiguous structures reject the traversal rather than choosing a convention.
+No relationship is created, reversed or migrated in the database by this feature.
+
+`compile_plan()` requires explicit observed edges; there is no runtime fallback
+to the import convention. `EDGES` still controls construction of the bundled
+CSV snapshot, which is a separate ingestion responsibility. Unknown relationship
+types or endpoint pairs remain unavailable until the read contract is extended.
+Direction tests are in `tests/test_cypher_direction.py`; reversed schemas are
+test fixtures, not changes made to the live database.
+
 Implementation: `app/services/neo4j_schema.py`, `Neo4jExecutor.schema()` and
 `TextToCypherService` in `app/services/neo4j_service.py`.
 Tests: `tests/test_neo4j_schema.py`. Property types use Neo4j's built-in
